@@ -1,0 +1,12 @@
+[submodule "compiler/romi-32u4-arduino-library"]
+	path = compiler/romi-32u4-arduino-library
+	url = https://github.com/pololu/romi-32u4-arduino-library
+[submodule "emscripten"]
+	path = emscripten
+	url = https://github.com/emscripten-core/emsdk.git
+[submodule "browsertools/avrvm"]
+	path = browsertools/avrvm
+	url = https://github.com/jkmnt/avrvm
+[submodule "compiler/ArduinoCore-avr"]
+	path = compiler/ArduinoCore-avr
+	url = https://github.com/arduino/ArduinoCore-avr
