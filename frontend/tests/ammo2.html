@@ -88,6 +88,8 @@
         "KeyD":'right',
         "KeyR":'reset'
       };
+      
+      var lbrh;
 
       // - Functions -
       function initGraphics() {
@@ -244,8 +246,8 @@
         return mesh;
       }
 
-      function createChassisMesh(w, l, h) {
-        var shape = new THREE.BoxGeometry(w, l, h, 1, 1, 1);
+      function createChassisMesh(w, h, l) {
+        var shape = new THREE.CylinderGeometry(w/2, l/2, h, 24, 1);
         var mesh = new THREE.Mesh(shape, materialInteractive);
         scene.add(mesh);
         return mesh;
@@ -253,22 +255,16 @@
 
       function createVehicle(pos, quat) {
         // Vehicle contants
-        var chassisWidth = 1.8;
+        var chassisWidth = 3;
         var chassisHeight = .6;
-        var chassisLength = 4;
+        var chassisLength = 3;
         var massVehicle = 800;
 
-        var wheelAxisPositionBack = -1;
-        var wheelRadiusBack = .4;
+        var wheelAxisPositionBack = 0;
+        var wheelRadiusBack = .75;
         var wheelWidthBack = .3;
-        var wheelHalfTrackBack = 1;
+        var wheelHalfTrackBack = 1.2;
         var wheelAxisHeightBack = .3;
-
-        var wheelAxisFrontPosition = 1.7;
-        var wheelHalfTrackFront = 1;
-        var wheelAxisHeightFront = .3;
-        var wheelRadiusFront = .35;
-        var wheelWidthFront = .2;
 
         var friction = 1000;
         var suspensionStiffness = 20.0;
@@ -283,7 +279,10 @@
         var maxBreakingForce = 100;
 
         // Chassis
-        var geometry = new Ammo.btBoxShape(new Ammo.btVector3(chassisWidth * .5, chassisHeight * .5, chassisLength * .5));
+        var geometry = new Ammo.btBoxShape(new Ammo.btVector3(chassisWidth / 2, chassisHeight / 2, chassisLength / 2));
+        console.log(geometry);
+        lbrh = geometry;
+        window.lbrh2 = geometry;
         var transform = new Ammo.btTransform();
         transform.setIdentity();
         transform.setOrigin(new Ammo.btVector3(pos.x, pos.y, pos.z));
@@ -297,9 +296,8 @@
         var chassisMesh = createChassisMesh(chassisWidth, chassisHeight, chassisLength);
 
         // Raycast Vehicle
-        var engineForce = 0;
-        var vehicleSteering = 0;
-        var breakingForce = 0;
+        var leftForce = 0;
+        var rightForce = 0;
         var tuning = new Ammo.btVehicleTuning();
         var rayCaster = new Ammo.btDefaultVehicleRaycaster(physicsWorld);
         var vehicle = new Ammo.btRaycastVehicle(tuning, body, rayCaster);
@@ -307,10 +305,12 @@
         physicsWorld.addAction(vehicle);
 
         // Wheels
-        var FRONT_LEFT = 0;
-        var FRONT_RIGHT = 1;
-        var BACK_LEFT = 2;
-        var BACK_RIGHT = 3;
+        // var FRONT_LEFT = 0;
+        // var FRONT_RIGHT = 1;
+        // var BACK_LEFT = 2;
+        // var BACK_RIGHT = 3;
+        var LEFT_WHEEL = 0;
+        var RIGHT_WHEEL = 1;
         var wheelMeshes = [];
         var wheelDirectionCS0 = new Ammo.btVector3(0, -1, 0);
         var wheelAxleCS = new Ammo.btVector3(-1, 0, 0);
@@ -334,10 +334,8 @@
           wheelMeshes[index] = createWheelMesh(radius, width);
         }
 
-        addWheel(true, new Ammo.btVector3(wheelHalfTrackFront, wheelAxisHeightFront, wheelAxisFrontPosition), wheelRadiusFront, wheelWidthFront, FRONT_LEFT);
-        addWheel(true, new Ammo.btVector3(-wheelHalfTrackFront, wheelAxisHeightFront, wheelAxisFrontPosition), wheelRadiusFront, wheelWidthFront, FRONT_RIGHT);
-        addWheel(false, new Ammo.btVector3(-wheelHalfTrackBack, wheelAxisHeightBack, wheelAxisPositionBack), wheelRadiusBack, wheelWidthBack, BACK_LEFT);
-        addWheel(false, new Ammo.btVector3(wheelHalfTrackBack, wheelAxisHeightBack, wheelAxisPositionBack), wheelRadiusBack, wheelWidthBack, BACK_RIGHT);
+        addWheel(false, new Ammo.btVector3(-wheelHalfTrackBack, wheelAxisHeightBack, wheelAxisPositionBack), wheelRadiusBack, wheelWidthBack, LEFT_WHEEL);
+        addWheel(false, new Ammo.btVector3(wheelHalfTrackBack, wheelAxisHeightBack, wheelAxisPositionBack), wheelRadiusBack, wheelWidthBack, RIGHT_WHEEL);
 
         // Sync keybord actions and physics and graphics
         function sync(dt) {
@@ -345,51 +343,33 @@
 
           speedometer.innerHTML = (speed < 0 ? '(R) ' : '') + Math.abs(speed).toFixed(1) + ' km/h';
 
-          breakingForce = 0;
-          engineForce = 0;
+          leftForce = 0;
+          rightForce = 0;
 
           if (actions.acceleration) {
-            if (speed < -1)
-              breakingForce = maxBreakingForce;
-            else engineForce = maxEngineForce;
+            leftForce = maxEngineForce;
+            rightForce = maxEngineForce;
           }
           if (actions.braking) {
-            if (speed > 1)
-              breakingForce = maxBreakingForce;
-            else engineForce = -maxEngineForce / 2;
+            leftForce = -maxEngineForce;
+            rightForce = -maxEngineForce;
           }
           if (actions.left) {
-            if (vehicleSteering < steeringClamp)
-              vehicleSteering += steeringIncrement;
+            leftForce = maxEngineForce;
+            rightForce = 0;
           }
-          else {
-            if (actions.right) {
-              if (vehicleSteering > -steeringClamp)
-                vehicleSteering -= steeringIncrement;
-            }
-            else {
-              if (vehicleSteering < -steeringIncrement)
-                vehicleSteering += steeringIncrement;
-              else {
-                if (vehicleSteering > steeringIncrement)
-                  vehicleSteering -= steeringIncrement;
-                else {
-                  vehicleSteering = 0;
-                }
-              }
-            }
+          if (actions.right) {
+            leftForce = 0;
+            rightForce = maxEngineForce;
           }
 
-          vehicle.applyEngineForce(engineForce, BACK_LEFT);
-          vehicle.applyEngineForce(engineForce, BACK_RIGHT);
+          vehicle.applyEngineForce(leftForce, LEFT_WHEEL);
+          vehicle.applyEngineForce(rightForce, RIGHT_WHEEL);
 
-          vehicle.setBrake(breakingForce / 2, FRONT_LEFT);
-          vehicle.setBrake(breakingForce / 2, FRONT_RIGHT);
-          vehicle.setBrake(breakingForce, BACK_LEFT);
-          vehicle.setBrake(breakingForce, BACK_RIGHT);
-
-          vehicle.setSteeringValue(vehicleSteering, FRONT_LEFT);
-          vehicle.setSteeringValue(vehicleSteering, FRONT_RIGHT);
+          if (leftForce == 0 && rightForce == 0) {
+            vehicle.setBrake(maxBreakingForce, LEFT_WHEEL);
+            vehicle.setBrake(maxBreakingForce, RIGHT_WHEEL);
+          }
 
           var tm, p, q, i;
           var n = vehicle.getNumWheels();
@@ -415,11 +395,9 @@
           vehiclePoint.applyQuaternion(forwardsDirection);
           raycaster.set(carPosition, vehiclePoint);
           var intersects = raycaster.intersectObjects(cubes);
-          console.log(vehiclePoint, carPosition);
           if (intersects.length > 0) {
             // intersected with something
             var intersect = intersects[0];
-            console.log(intersect);
 //            debugger;
             intersect.object.material.color.set('#0f0');
           }

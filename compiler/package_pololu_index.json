@@ -1,0 +1,133 @@
+{
+  "packages": [
+    {
+      "name": "pololu-a-star",
+      "maintainer": "Pololu",
+      "websiteURL": "http://www.pololu.com/",
+      "email": "inbox@pololu.com",
+
+      "platforms": [
+        {
+          "name": "Pololu A-Star Boards",
+          "architecture": "avr",
+          "version": "3.0.0",
+          "category": "Contributed",
+          "help": {
+            "online": "https://github.com/pololu/a-star"
+          },
+          "url": "https://github.com/pololu/a-star/archive/3.0.0.zip",
+          "archiveFileName": "pololu-a-star-3.0.0.zip",
+          "checksum": "SHA-256:1e763704697d3d4137ded4ab3bb73bb30f8e03393606fa7ed7e1ef7840e01c7f",
+          "size": "75564",
+          "boards": [
+            {"name": "Pololu A-Star 32U4"}
+          ],
+          "toolsDependencies": []
+        },
+        {
+          "name": "Pololu A-Star Boards",
+          "architecture": "avr",
+          "version": "3.0.1",
+          "category": "Contributed",
+          "help": {
+            "online": "https://github.com/pololu/a-star"
+          },
+          "url": "https://github.com/pololu/a-star/archive/3.0.1.zip",
+          "archiveFileName": "pololu-a-star-3.0.1.zip",
+          "checksum": "SHA-256:ac3ea18541b3a399ee3f9711364c57055a8e7c6ed1c10d0399fd49a0dba1b424",
+          "size": "75787",
+          "boards": [
+            {"name": "Pololu A-Star 32U4"}
+          ],
+          "toolsDependencies": []
+        },
+        {
+          "name": "Pololu A-Star Boards",
+          "architecture": "avr",
+          "version": "3.1.0",
+          "category": "Contributed",
+          "help": {
+            "online": "https://github.com/pololu/a-star"
+          },
+          "url": "https://github.com/pololu/a-star/archive/3.1.0.zip",
+          "archiveFileName": "pololu-a-star-3.1.0.zip",
+          "checksum": "SHA-256:861b3ae429226cddaa49a63384923f42a39d65c0dbbe84b63aff6522fcc8e137",
+          "size": "130509",
+          "boards": [
+            {"name": "A-Star 32U4"},
+            {"name": "A-Star 328PB"},
+            {"name": "Zumo 32U4"},
+            {"name": "Balboa 32U4"},
+            {"name": "Romi 32U4 Control Board"}
+          ],
+          "toolsDependencies": []
+        },
+        {
+          "name": "Pololu A-Star Boards",
+          "architecture": "avr",
+          "version": "4.0.0",
+          "category": "Contributed",
+          "help": {
+            "online": "https://github.com/pololu/a-star"
+          },
+          "url": "https://github.com/pololu/a-star/archive/4.0.0.zip",
+          "archiveFileName": "pololu-a-star-4.0.0.zip",
+          "checksum": "SHA-256:bdd69bfa7b606db46f37a1392a813d446414e5fd90fd47c3f38713012c379b38",
+          "size": "131402",
+          "boards": [
+            {"name": "A-Star 32U4"},
+            {"name": "A-Star 328PB"},
+            {"name": "Zumo 32U4"},
+            {"name": "Balboa 32U4"},
+            {"name": "Romi 32U4 Control Board"}
+          ],
+          "toolsDependencies": []
+        },
+        {
+          "name": "Pololu A-Star Boards",
+          "architecture": "avr",
+          "version": "4.0.1",
+          "category": "Contributed",
+          "help": {
+            "online": "https://github.com/pololu/a-star"
+          },
+          "url": "https://github.com/pololu/a-star/archive/4.0.1.zip",
+          "archiveFileName": "pololu-a-star-4.0.1.zip",
+          "checksum": "SHA-256:3b95c1de2a7a3a0d433492d2df406517011152f17c6bc1757e3f466da7686c85",
+          "size": "131285",
+          "boards": [
+            {"name": "A-Star 32U4"},
+            {"name": "A-Star 328PB"},
+            {"name": "Zumo 32U4"},
+            {"name": "Balboa 32U4"},
+            {"name": "Romi 32U4 Control Board"}
+          ],
+          "toolsDependencies": []
+        },
+        {
+          "name": "Pololu A-Star Boards",
+          "architecture": "avr",
+          "version": "4.0.2",
+          "category": "Contributed",
+          "help": {
+            "online": "https://github.com/pololu/a-star"
+          },
+          "url": "https://github.com/pololu/a-star/archive/4.0.2.zip",
+          "archiveFileName": "pololu-a-star-4.0.2.zip",
+          "checksum": "SHA-256:d9894ce01591893b9b2611470b66ae39c64832ba031f706ebdca0789be7f7cd4",
+          "size": "131344",
+          "boards": [
+            {"name": "A-Star 32U4"},
+            {"name": "A-Star 328PB"},
+            {"name": "Zumo 32U4"},
+            {"name": "Balboa 32U4"},
+            {"name": "Romi 32U4 Control Board"}
+          ],
+          "toolsDependencies": []
+        }
+      ],
+
+      "tools": []
+    }
+  ]
+}
