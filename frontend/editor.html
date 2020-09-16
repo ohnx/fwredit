@@ -93,7 +93,6 @@
 <div class="sideLeft">
     <div id="buttonbar">
         <a onclick="openLocalFile()">Open</a>&nbsp; &middot; &nbsp;
-        Changes save automatically &nbsp; &middot; &nbsp;
         <a onclick="downloadFile()">Download</a> &nbsp; &middot; &nbsp;
         <a onclick="compileCode()">Compile</a> &nbsp; &middot; &nbsp;
         <a onclick="compileCode(reloadSimulator)">Compile and Run</a> &nbsp; &middot; &nbsp;
@@ -102,7 +101,7 @@
 <div id="editor">
 </div>
   <div id="console">
-    <pre id="console-body"></pre>
+    <pre id="console-body">This is the output window. Messages from compiling your code and the Serial console appear here.</pre>
   </div>
 </div>
 
@@ -132,7 +131,7 @@ let saveTimeout = null;
   editor.on("input", function() {
     if (!editor.session.getUndoManager().isClean()) {
       if (saveTimeout) clearTimeout(saveTimeout);
-      saveTimeout = setTimeout(saveLocalStorage, 1000);
+      saveTimeout = setTimeout(saveLocalStorage, 500);
     }
   });
 
