@@ -33,6 +33,9 @@ let compileCode = function(codePath, res, cb) {
   let outputPath = getOutputPath();
   let fsOutputPath = path.join(initWd, 'compile_out', outputPath);
   let childStdout = '', childStderr = '';
+
+  console.log(`Compiling ${codePath} to ${fsOutputPath}`);
+
   let child = spawn('emcc', [codePath,
                     '-I', 'util/',
                     '-x', 'c++',
