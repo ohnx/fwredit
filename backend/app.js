@@ -11,8 +11,12 @@ const PORT = process.env.PORT || 8080;
 
 console.log(`Server listening on ${HOST}:${PORT}`);
 
+let rndChar = function() {
+  return String.fromCharCode(65 + Math.floor(Math.random() * 26));
+};
+
 let randomId = function() {
-  return String.fromCharCode(65 + Math.floor(Math.random() * 26)) + Date.now();
+  return rndChar() + rndChar() + rndChar() + Date.now();
 };
 
 let checkAuth = function(req) {
