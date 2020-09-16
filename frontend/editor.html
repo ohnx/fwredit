@@ -194,13 +194,13 @@ function compileCode(cb) {
   .then(response => response.json())
   .then(data => {
     if ('stdout' in data && data.stdout.length > 0) {
-      let lines = data.stdout.split('\n');
+      let lines = data.stdout.split('\\n');
       for (var i = 0; i < lines.length; i++) {
         addMessageToConsole(lines[i]);
       }
     }
     if ('stderr' in data && data.stderr.length > 0) {
-      let lines = data.stderr.split('\n');
+      let lines = data.stderr.split('\\n');
       for (i = 0; i < lines.length; i++) {
         addMessageToConsole(lines[i], true);
       }
