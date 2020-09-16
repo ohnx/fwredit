@@ -1,6 +1,10 @@
 const http = require('http');
 const url = require('url');
+const fs = require('fs');
 const spawn = require('child_process').spawn;
+const path = require('path');
+const tmp = require('tmp');
+const initWd = process.cwd();
 
 const HOST = process.env.HOST || '127.0.0.1';
 const PORT = process.env.PORT || 8080;
@@ -13,49 +17,89 @@ let randomId = function() {
 
 let checkAuth = function(req) {
   // TODO: check authentication
+  return true;
 };
 
 let getOutputPath = function() {
   // TODO: get output path
-  return '/';
+  return randomId() + '.js';
 };
 
-let compileCode = function(codePath, res) {
+let compileCode = function(codePath, res, cb) {
   let outputPath = getOutputPath();
+  let fsOutputPath = path.join(initWd, 'compile_out', outputPath);
+  let childStdout = '', childStderr = '';
   let child = spawn('emcc', [codePath, '-Iutil/', '-O3',
                     '-s', 'ASYNCIFY', '--js-library',
                     'library.js', '--bind', '-o',
-                    outputPath])
+                    fsOutputPath]);
+
+  // capture&send stdout/stderr
+  child.stdout.on('data', function(data) {
+    childStdout += data.toString();
+  });
+  child.stderr.on('data', function(data) {
+    childStderr += data.toString();
+  });
+
   child.on('exit', function (code, signal) {
-    res.end('child process exited with ' +
-            `code ${code} and signal ${signal}`);
+    if (code == 0)
+      res.writeHead(200, {'Content-Type': 'text/json'});
+    else
+      res.writeHead(500, {'Content-Type': 'text/json'});
+
+    // output results
+    let resObj = {
+      path: `/code/${outputPath}`,
+      code: code,
+      signal: signal,
+      stdout: childStdout,
+      stderr: childStderr,
+      msg: code == 0 ? 'Compilation failed!' : 'Compilation succeeded!'
+    };
+
+    // send results
+    res.end(JSON.stringify(resObj));
+    return cb();
   });
 };
 
 http.createServer(function (req, res) {
-  req;
-
-
-    if (req.method === "GET") {
-        res.writeHead(200, { "Content-Type": "text/html" });
-        fs.createReadStream("./public/form.html", "UTF-8").pipe(res);
-    } else if (req.method === "POST") {
-    
-        var body = "";
-        req.on("data", function (chunk) {
-            body += chunk;
-        });
-
-        req.on("end", function(){
-            res.writeHead(200, { "Content-Type": "text/html" });
-            res.end(body);
-        });
+  if (req.method === 'POST') {
+    if (!checkAuth(req)) {
+      res.writeHead(400, {'Content-Type': 'text/json'});
+      res.end(`{"msg":"Bad authorization"}`);
+      return;
     }
 
+    let body = '';
+    req.on('data', function(chunk) {
+        body += chunk;
+    });
 
+    req.on('end', function() {
+      tmp.file(function _tempFileCreated(err, path, fd, cleanupCallback) {
+        if (err) {
+          res.writeHead(500, {'Content-Type': 'text/json'});
+          res.end(`{"msg":"Temporary file creation failed"}`);
+          return;
+        }
 
-  res.writeHead(200, {'Content-Type': 'text/plain'});
-  var q = url.parse(req.url, true).query;
-  var txt = q.year + " " + q.month;
-  res.end(txt);
+        // write out contents to temp file
+        fs.writeFile(path, body, function(err) {
+          if (err) {
+            res.writeHead(500, {'Content-Type': 'text/json'});
+            res.end(`{"msg":"Temporary file creation failed"}`);
+            return cleanupCallback();
+          }
+
+          // success, now compile it!
+          compileCode(path, res, cleanupCallback);
+        });
+      });
+    });
+  } else {
+    res.writeHead(400, {'Content-Type': 'text/json'});
+    res.end(`{"msg":"Invalid request"}`);
+  }
 }).listen(PORT, HOST);

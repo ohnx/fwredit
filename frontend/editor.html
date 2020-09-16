@@ -243,15 +243,16 @@ Nunc consectetur orci id rhoncus suscipit. Ut sodales, magna a dapibus vulputate
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.min.js" type="text/javascript" charset="utf-8"></script>
 <script>
 let disableSimulator = false;
+let editor = null;
 
-/* global ace */
+/* global ace, fetch */
 (function() {
     ace.config.set('basePath', 'https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/');
     ace.config.set('fontSize', '16px');
-    let editor = ace.edit("editor");
+    editor = ace.edit("editor");
     editor.setTheme("ace/theme/dawn");
     editor.session.setMode("ace/mode/c_cpp");
-    
+
     const urlParams = new URLSearchParams(window.location.search);
     checkSimulatorDisabled(urlParams.has('disableSimulator'));
 })();
@@ -264,7 +265,6 @@ function checkSimulatorDisabled(overrideDisableSim) {
   } else {
     document.getElementById('simulator').srcdoc = '<html><body><h1>Simulator disabled.</h1></body></html>';
   }
-
 }
 
 function reloadSimulator() {
@@ -291,6 +291,23 @@ function addMessageToConsole(msg) {
   setTimeout(function() {
     consoleBody.scrollTop = consoleBody.scrollHeight;
   }, 100);
+}
+
+function compileCode() {
+  fetch('/compile', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'text/plain',
+    },
+    body: editor.getValue()
+  })
+  .then(response => response.json())
+  .then(data => {
+    console.log('Success:', data);
+  })
+  .catch((error) => {
+    console.error('Error:', error);
+  });
 }
 
 /* called by the child iframe */
