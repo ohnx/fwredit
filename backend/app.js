@@ -55,7 +55,7 @@ let compileCode = function(codePath, res, cb) {
       signal: signal,
       stdout: childStdout,
       stderr: childStderr,
-      msg: code == 0 ? 'Compilation failed!' : 'Compilation succeeded!'
+      msg: code == 0 ? 'Compilation succeeded!' : 'Compilation failed!'
     };
 
     // send results

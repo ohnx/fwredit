@@ -57,6 +57,9 @@
         font-family: 'Consolas', monospace;
         overflow-y: scroll;
     }
+    .msg-err {
+        color: red;
+    }
     #console-body {
         white-space: pre-wrap;
     }
@@ -93,145 +96,23 @@
         Changes saved automatically! &nbsp; &middot; &nbsp;
         <a href="#">Download</a> &nbsp; &middot; &nbsp;
         <a href="#">Check for errors</a> &nbsp; &middot; &nbsp;
-        <a onclick="reloadSimulator()">Run</a> &nbsp; &middot; &nbsp;
+        <a onclick="compileCode()">Compile and Run</a> &nbsp; &middot; &nbsp;
         <a id="simPauser" onclick="pauseSimulator()">Stop Simulator</a>
     </div>
-<div id="editor">// CS10 / C510
-#include &lt;Romi32U4.h&gt;
-
-#define LEFT_SENSOR A2
-#define RIGHT_SENSOR A0
-#define MOVEMENT_SPEED 200
-#define SMALL_MOVEMENT_SPEED 100
-#define LEFT_OFFSET 200
-
-Romi32U4Motors motors;
-Romi32U4ButtonA buttonA;
-Romi32U4ButtonB buttonB;
-Romi32U4ButtonC buttonC;
-Romi32U4LCD lcd;
-int calib_offset = LEFT_OFFSET;
-
-void calibrateSensors() {
-  int left_base;
-  int right_base;
-
-  while (!buttonA.isPressed()) {
-    lcd.clear();
-    lcd.gotoXY(0, 0);
-    lcd.print("R: ");
-    right_base = analogRead(RIGHT_SENSOR);
-    lcd.print(right_base);
-    lcd.gotoXY(0, 1);
-    lcd.print("L: ");
-    left_base = analogRead(LEFT_SENSOR);
-    lcd.print(left_base);
-    delay(100);
-  }
-
-  calib_offset = right_base - left_base;
-
-  lcd.clear();
-  lcd.print("Calibr8");
-  lcd.gotoXY(0, 1);
-  lcd.print("O: ");
-  lcd.print(calib_offset);
-
-  while(!buttonC.isPressed()) {
-    delay(100);
-  }
-
-  delay(1000);
-}
+<div id="editor">#include &lt;Romi32U4.h&gt;
 
 // Run once, when the sketch starts
 void setup() {
-  uint16_t batteryLevel;
-  pinMode(LEFT_SENSOR, INPUT);
-  pinMode(RIGHT_SENSOR, INPUT);
-
-  while (!buttonA.isPressed()) {
-    // read the battery level and store it in a variable
-    batteryLevel = readBatteryMillivolts();
-    
-    lcd.clear();  // clear the LCD
-    lcd.print("B=");
-    lcd.print(batteryLevel); // print the battery voltage 
-    lcd.print("mV");
-    lcd.gotoXY(0, 1);
-    lcd.print("Press A");
-
-    delay(100); // Pause for 100ms
-  }
-  lcd.clear();
-
-  // Calibration
-  lcd.print("Calibr8?");
-  lcd.gotoXY(0, 1);
-  lcd.print("Y:B N:C");
-  while (1) {
-    if (buttonC.isPressed()) {
-      delay(500);
-      break;
-    } else if (buttonB.isPressed()) {
-      calibrateSensors();
-      break;
-    } else {
-      delay(100);
-    }
-  }
-
-  lcd.clear();
+  delay(10);
 }
 
 // Run over and over again
-void loop()
-{
-  uint16_t battery_level;
-  int left_light;
-  int right_light;
-
-  battery_level = readBatteryMillivolts();
-  left_light = analogRead(LEFT_SENSOR);
-  right_light = analogRead(RIGHT_SENSOR);
-
-  lcd.clear();
-  lcd.gotoXY(0, 0);
-  lcd.print("B=");
-  lcd.print(battery_level); // print the battery voltage 
-  lcd.print("mV");
-  lcd.gotoXY(0, 1);
-  if (left_light - right_light + calib_offset < -30) {
-    lcd.print("HI L=");
-    lcd.print(left_light);
-
-    motors.setLeftSpeed(SMALL_MOVEMENT_SPEED);
-    motors.setRightSpeed(MOVEMENT_SPEED);
-  } else if (right_light - left_light - calib_offset < -30) {
-    lcd.print("HI R=");
-    lcd.print(right_light);
-
-    motors.setLeftSpeed(MOVEMENT_SPEED);
-    motors.setRightSpeed(SMALL_MOVEMENT_SPEED);
-  } else {
-    motors.setLeftSpeed(MOVEMENT_SPEED);
-    motors.setRightSpeed(MOVEMENT_SPEED);
-  }
- 
+void loop() {
   delay(100);
 }
 </div>
   <div id="console">
-    <pre id="console-body">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque leo ligula, lacinia vel aliquam nec, viverra at turpis. Nunc aliquam venenatis nulla vel blandit. Ut feugiat rhoncus justo quis ornare. Donec volutpat, tortor vel egestas pharetra, nunc metus egestas nunc, vitae feugiat erat lacus non nisi. Vivamus molestie urna neque, vel venenatis nisl auctor eget. Suspendisse rutrum ipsum ut fermentum fermentum. Quisque at neque ligula. Fusce tincidunt eros eget mollis lobortis. Ut auctor fermentum ex id porttitor. Phasellus ut vestibulum lorem, ac scelerisque felis. Praesent accumsan sagittis nulla, in maximus odio faucibus in. Maecenas id leo ac ipsum pharetra semper non nec lectus. Mauris odio erat, fringilla vitae finibus et, vulputate sed nisl. Vivamus bibendum vestibulum posuere.
-
-Donec faucibus vehicula urna, vitae lobortis erat tempor eget. Fusce vel lectus dictum, semper augue at, elementum eros. Etiam pulvinar quam vel interdum dapibus. Nunc bibendum neque ac commodo tempus. Nulla sed dui mi. Duis placerat, nibh quis accumsan tempus, est dui malesuada sem, vitae ullamcorper felis mi sit amet orci. Nam est erat, lacinia sed euismod non, pellentesque rutrum ligula. Mauris in sem at urna sollicitudin pulvinar at at metus. Sed cursus ipsum massa, in posuere lectus ultrices non. Nam scelerisque tincidunt cursus. Cras sed massa quis enim hendrerit convallis. Donec vulputate urna tempor condimentum tincidunt. Duis in sollicitudin eros. Etiam at dignissim ante. Proin quam nibh, posuere ut fringilla a, ultricies at libero.
-
-Ut nec eleifend felis, quis laoreet diam. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Suspendisse fringilla luctus auctor. Donec a placerat ligula. Morbi placerat, enim at vehicula consectetur, mauris lorem blandit odio, in rutrum ipsum magna vel ex. Maecenas rhoncus commodo sem vitae sagittis. Nunc cursus viverra volutpat. Vestibulum eleifend ac sem at tempor. Cras arcu libero, accumsan at dolor vitae, ultrices imperdiet turpis. Curabitur vehicula risus ut mauris dapibus bibendum. Vivamus quis interdum felis.
-
-Quisque neque risus, vulputate at diam sodales, pulvinar iaculis felis. Integer vitae nulla ullamcorper, condimentum velit at, tempus ex. Duis eu faucibus urna. Vivamus dapibus finibus suscipit. Vivamus quis malesuada diam, et ullamcorper enim. Mauris sed mauris faucibus, fringilla ante vitae, interdum neque. In fringilla condimentum finibus. Pellentesque quis justo ut odio venenatis elementum. Morbi sed mauris sed metus ultrices facilisis. Morbi rutrum enim erat. Suspendisse faucibus ut odio non pellentesque. Suspendisse lacinia dolor quis mi laoreet lobortis. In ornare pharetra nunc id dignissim.
-
-Nunc consectetur orci id rhoncus suscipit. Ut sodales, magna a dapibus vulputate, elit ligula fermentum dui, vitae interdum quam erat a felis. Proin ac pretium magna. Donec nec vestibulum ex. Donec suscipit, lacus vel rhoncus luctus, tellus tellus vehicula libero, sed lacinia mi leo vel sem. Duis nibh nisi, sodales sit amet elit sodales, vehicula fringilla enim. Donec facilisis massa mi, a dapibus velit porta eu. Etiam tincidunt nisi ac porttitor viverra. Praesent turpis enim, varius a nibh a, dignissim rhoncus nisi. Etiam in felis massa. Pellentesque egestas, sem sed dapibus fringilla, justo orci suscipit risus, sed pretium ex libero a ante. Donec eget purus justo. Phasellus sed massa id lorem interdum rutrum placerat non felis.
-</pre>
+    <pre id="console-body"></pre>
   </div>
 </div>
 
@@ -245,7 +126,7 @@ Nunc consectetur orci id rhoncus suscipit. Ut sodales, magna a dapibus vulputate
 let disableSimulator = false;
 let editor = null;
 
-/* global ace, fetch */
+/* global ace, fetch, localStorage */
 (function() {
     ace.config.set('basePath', 'https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/');
     ace.config.set('fontSize', '16px');
@@ -284,16 +165,25 @@ function pauseSimulator() {
   }
 }
 
-function addMessageToConsole(msg) {
+function addMessageToConsole(msg, iserr = false) {
   console.log(msg);
   let consoleBody = document.getElementById('console-body');
-  consoleBody.textContent += msg;
+  if (!iserr) {
+    consoleBody.textContent += msg;
+  } else {
+    // want to display errors in red
+    let mySpan = document.createElement('span');
+    let spanContents = document.createTextNode(msg);
+    mySpan.appendChild(spanContents);
+    mySpan.classList.add('msg-err');
+    consoleBody.appendChild(mySpan);
+  }
   setTimeout(function() {
     consoleBody.scrollTop = consoleBody.scrollHeight;
   }, 100);
 }
 
-function compileCode() {
+function compileCode(cb) {
   fetch('/compile', {
     method: 'POST',
     headers: {
@@ -303,7 +193,23 @@ function compileCode() {
   })
   .then(response => response.json())
   .then(data => {
-    console.log('Success:', data);
+    if ('stdout' in data && data.stdout.length > 0) {
+      let lines = data.stdout.split('\n');
+      for (var i = 0; i < lines.length; i++) {
+        addMessageToConsole(lines[i]);
+      }
+    }
+    if ('stderr' in data && data.stderr.length > 0) {
+      let lines = data.stderr.split('\n');
+      for (i = 0; i < lines.length; i++) {
+        addMessageToConsole(lines[i], true);
+      }
+    }
+    if ('code' in data && data.code == 0) {
+      localStorage.setItem('FILE_LOC', data.path);
+      // successful result
+      cb();
+    }
   })
   .catch((error) => {
     console.error('Error:', error);
@@ -317,7 +223,10 @@ function simulatorReadyCallback() {
 }
 
 function startSimulation() {
-  document.getElementById('simulator').contentWindow.Simulator.run('/preview/fwredit/compiler_take2/a.out.js');
+  let lastKnownFile = localStorage.getItem('FILE_LOC');
+  if (lastKnownFile) {
+    document.getElementById('simulator').contentWindow.Simulator.run(lastKnownFile);
+  }
 }
 </script>
 </body>
