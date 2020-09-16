@@ -4,7 +4,7 @@
 <title>Fun With Robots &middot; Editor</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-<style type="text/css" media="screen">
+<style type="text/css" media="screen" id="editorStyles">
     body {
       overflow: hidden;
     }
@@ -92,10 +92,10 @@
 
 <div class="sideLeft">
     <div id="buttonbar">
-        <a href="#">Open Local File</a>&nbsp; &middot; &nbsp;
+        <a onclick="openLocalFile()">Open Local File</a>&nbsp; &middot; &nbsp;
         Changes saved automatically! &nbsp; &middot; &nbsp;
         <a href="#">Download</a> &nbsp; &middot; &nbsp;
-        <a href="#">Check for errors</a> &nbsp; &middot; &nbsp;
+        <a onclick="compileCode()">Compile</a> &nbsp; &middot; &nbsp;
         <a onclick="compileCode(reloadSimulator)">Compile and Run</a> &nbsp; &middot; &nbsp;
         <a id="simPauser" onclick="pauseSimulator()">Stop Simulator</a>
     </div>
@@ -126,7 +126,7 @@ void loop() {
 let disableSimulator = false;
 let editor = null;
 
-/* global ace, fetch, localStorage */
+/* global ace, fetch, localStorage, URLSearchParams */
 (function() {
     ace.config.set('basePath', 'https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/');
     ace.config.set('fontSize', '16px');
@@ -136,7 +136,34 @@ let editor = null;
 
     const urlParams = new URLSearchParams(window.location.search);
     checkSimulatorDisabled(urlParams.has('disableSimulator'));
+    if (urlParams.has('disableSimulator')) {
+      var editorStyles = document.getElementById('editorStyles').sheet;
+      editorStyles.insertRule('.sideLeft { width: 100%; }', editorStyles.cssRules.length);
+      editorStyles.insertRule('.sideRight { display: none; }', editorStyles.cssRules.length);
+    }
 })();
+
+function openLocalFile() {
+  let input = document.createElement('input');
+  input.type = 'file';
+
+  input.onchange = e => { 
+     // getting a hold of the file reference
+     var file = e.target.files[0]; 
+  
+     // setting up the reader
+     var reader = new FileReader();
+     reader.readAsText(file,'UTF-8');
+  
+     // here we tell the reader what to do when it's done reading...
+     reader.onload = readerEvent => {
+        var content = readerEvent.target.result; // this is the content!
+        editor.setValue(content);
+     };
+  };
+
+  input.click();
+}
 
 function checkSimulatorDisabled(overrideDisableSim) {
   if (overrideDisableSim != undefined) disableSimulator = overrideDisableSim;
