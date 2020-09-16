@@ -2,20 +2,29 @@
 <html lang="en">
 <head>
 <title>Fun With Robots &middot; Editor</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 <style type="text/css" media="screen">
-    .left {
+    body {
+      overflow: hidden;
+    }
+    .sideLeft {
         position: absolute;
         top: 0;
         left: 0;
         bottom: 0;
         width: 50%;
     }
-    .right {
+    .sideRight {
         position: absolute;
         top: 0;
         right: 0;
         bottom: 0;
         width: 50%;
+    }
+    iframe {
+      width: 100%;
+      height: 100%;
     }
     #buttonbar {
         position: absolute;
@@ -59,13 +68,33 @@
         bottom: 0;
         background: pink;
     }
+    #speedometer {
+      color: #ffffff;
+      background-color: #990000;
+      position: absolute;
+      bottom: 0px;
+      padding: 5px;
+    }
+    #info {
+      position: absolute;
+      top: 0px; width: 100%;
+      padding: 5px;
+    }
+    #buttonbar a {
+      cursor: pointer;
+    }
 </style>
 </head>
 <body>
 
-<div class="left">
+<div class="sideLeft">
     <div id="buttonbar">
-        <a href="#">Run program</a> &nbsp; &middot; &nbsp; Changes saved automatically!
+        <a href="#">Open Local File</a>&nbsp; &middot; &nbsp;
+        Changes saved automatically! &nbsp; &middot; &nbsp;
+        <a href="#">Download</a> &nbsp; &middot; &nbsp;
+        <a href="#">Check for errors</a> &nbsp; &middot; &nbsp;
+        <a onclick="reloadSimulator()">Run</a> &nbsp; &middot; &nbsp;
+        <a id="simPauser" onclick="pauseSimulator()">Stop Simulator</a>
     </div>
 <div id="editor">// CS10 / C510
 #include &lt;Romi32U4.h&gt;
@@ -190,8 +219,9 @@ void loop()
   }
  
   delay(100);
-}</div>
-<div id="console">
+}
+</div>
+  <div id="console">
     <pre id="console-body">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque leo ligula, lacinia vel aliquam nec, viverra at turpis. Nunc aliquam venenatis nulla vel blandit. Ut feugiat rhoncus justo quis ornare. Donec volutpat, tortor vel egestas pharetra, nunc metus egestas nunc, vitae feugiat erat lacus non nisi. Vivamus molestie urna neque, vel venenatis nisl auctor eget. Suspendisse rutrum ipsum ut fermentum fermentum. Quisque at neque ligula. Fusce tincidunt eros eget mollis lobortis. Ut auctor fermentum ex id porttitor. Phasellus ut vestibulum lorem, ac scelerisque felis. Praesent accumsan sagittis nulla, in maximus odio faucibus in. Maecenas id leo ac ipsum pharetra semper non nec lectus. Mauris odio erat, fringilla vitae finibus et, vulputate sed nisl. Vivamus bibendum vestibulum posuere.
 
 Donec faucibus vehicula urna, vitae lobortis erat tempor eget. Fusce vel lectus dictum, semper augue at, elementum eros. Etiam pulvinar quam vel interdum dapibus. Nunc bibendum neque ac commodo tempus. Nulla sed dui mi. Duis placerat, nibh quis accumsan tempus, est dui malesuada sem, vitae ullamcorper felis mi sit amet orci. Nam est erat, lacinia sed euismod non, pellentesque rutrum ligula. Mauris in sem at urna sollicitudin pulvinar at at metus. Sed cursus ipsum massa, in posuere lectus ultrices non. Nam scelerisque tincidunt cursus. Cras sed massa quis enim hendrerit convallis. Donec vulputate urna tempor condimentum tincidunt. Duis in sollicitudin eros. Etiam at dignissim ante. Proin quam nibh, posuere ut fringilla a, ultricies at libero.
@@ -202,13 +232,18 @@ Quisque neque risus, vulputate at diam sodales, pulvinar iaculis felis. Integer 
 
 Nunc consectetur orci id rhoncus suscipit. Ut sodales, magna a dapibus vulputate, elit ligula fermentum dui, vitae interdum quam erat a felis. Proin ac pretium magna. Donec nec vestibulum ex. Donec suscipit, lacus vel rhoncus luctus, tellus tellus vehicula libero, sed lacinia mi leo vel sem. Duis nibh nisi, sodales sit amet elit sodales, vehicula fringilla enim. Donec facilisis massa mi, a dapibus velit porta eu. Etiam tincidunt nisi ac porttitor viverra. Praesent turpis enim, varius a nibh a, dignissim rhoncus nisi. Etiam in felis massa. Pellentesque egestas, sem sed dapibus fringilla, justo orci suscipit risus, sed pretium ex libero a ante. Donec eget purus justo. Phasellus sed massa id lorem interdum rutrum placerat non felis.
 </pre>
-</div>
+  </div>
 </div>
 
+<div class="sideRight">
+  <iframe id="simulator" srcdoc="<html><body><h1>Page loading...</h1></body></html>"></iframe>
+</div>
 
 <!-- editor side -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.min.js" type="text/javascript" charset="utf-8"></script>
 <script>
+let disableSimulator = false;
+
 /* global ace */
 (function() {
     ace.config.set('basePath', 'https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/');
@@ -216,9 +251,57 @@ Nunc consectetur orci id rhoncus suscipit. Ut sodales, magna a dapibus vulputate
     let editor = ace.edit("editor");
     editor.setTheme("ace/theme/dawn");
     editor.session.setMode("ace/mode/c_cpp");
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    checkSimulatorDisabled(urlParams.has('disableSimulator'));
 })();
+
+function checkSimulatorDisabled(overrideDisableSim) {
+  if (overrideDisableSim != undefined) disableSimulator = overrideDisableSim;
+  if (!disableSimulator) {
+    document.getElementById('simulator').removeAttribute('srcdoc');
+    document.getElementById('simulator').src = 'simulator.html';
+  } else {
+    document.getElementById('simulator').srcdoc = '<html><body><h1>Simulator disabled.</h1></body></html>';
+  }
+
+}
+
+function reloadSimulator() {
+  document.getElementById('simulator').contentWindow.location.reload();
+}
+
+function pauseSimulator() {
+  let pauser = document.getElementById('simPauser');
+  if (pauser.innerHTML.indexOf('Stop') >= 0) {
+    // pause simulation
+    checkSimulatorDisabled(!disableSimulator);
+    pauser.innerHTML = 'Start Simulation';
+  } else {
+    // resume simulation
+    checkSimulatorDisabled(!disableSimulator);
+    pauser.innerHTML = 'Stop Simulation';
+  }
+}
+
+function addMessageToConsole(msg) {
+  console.log(msg);
+  let consoleBody = document.getElementById('console-body');
+  consoleBody.textContent += msg;
+  setTimeout(function() {
+    consoleBody.scrollTop = consoleBody.scrollHeight;
+  }, 100);
+}
+
+/* called by the child iframe */
+function simulatorReadyCallback() {
+  document.getElementById('simulator').contentWindow.Simulator.registerSerialReceiver(addMessageToConsole);
+  startSimulation();
+}
+
+function startSimulation() {
+  document.getElementById('simulator').contentWindow.Simulator.run('/preview/fwredit/compiler_take2/a.out.js');
+}
 </script>
-
-
 </body>
 </html>
