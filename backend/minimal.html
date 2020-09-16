@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+  <body>
+    <div>Minimal broken example</div>
+    <script src="minimal.js"></script>
+    <script>
+      var defaultModule = {
+        onRuntimeInitialized: function() {
+          // run the code
+          Module.demonstrateIssue();
+        }
+      };
+      
+      var Module = Object.assign({}, defaultModule);
+    </script>
+  </body>
+</html>
