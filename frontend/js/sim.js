@@ -1,4 +1,4 @@
-/* global Ammo, THREE, Stats */
+/* global Ammo, THREE, Stats, localStorage */
 let simulatorCode = function(Ammo) {
   // - Global variables -
   var DISABLE_DEACTIVATION = 4;
@@ -489,6 +489,12 @@ Ammo().then(function(Ammo) {
   window.SimulatorAPI = SimulatorAPI;
   if (parent && parent.simulatorReadyCallback) {
     parent.simulatorReadyCallback();
+  } else {
+    /* no parent, so let's just run stuff for ourselves */
+    let lastKnownFile = localStorage.getItem('FILE_LOC');
+    if (lastKnownFile) {
+      Simulator.run(lastKnownFile);
+    }
   }
 });
 
