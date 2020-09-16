@@ -151,16 +151,16 @@ function loadLocalStorage() {
   if (existingFile) editor.setValue(existingFile);
   else {
     // default
-    editor.setValue("#include <Romi32U4.h>\
-\
-// Run once, when the sketch starts\
-void setup() {\
-  delay(10);\
-}\
-\
-// Run over and over again\
-void loop() {\
-  delay(100);\
+    editor.setValue("#include <Romi32U4.h>\n\
+\n\
+// Run once, when the sketch starts\n\
+void setup() {\n\
+  delay(10);\n\
+}\n\
+\n\
+// Run over and over again\n\
+void loop() {\n\
+  delay(100);\n\
 }");
   }
 }
