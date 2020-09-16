@@ -457,7 +457,7 @@ let simulatorCode = function(Ammo) {
 
     // serial
     this.serialPrint = function(str) {
-      serialCallback(str);
+      if (serialCallback) serialCallback(str);
     };
   };
   this.API = new apiCode(this);
