@@ -1,0 +1,3 @@
+backend/compile_out/*.js
+backend/compile_out/*.wasm
+backend/node_modules

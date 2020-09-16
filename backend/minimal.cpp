@@ -19,3 +19,4 @@ void glueSetupAndRun() {
 EMSCRIPTEN_BINDINGS(romi_code) {
     emscripten::function("GlueCode_setupAndRun", &glueSetupAndRun);
 }
+

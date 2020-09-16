@@ -1,7 +1,7 @@
 /* global mergeInto, LibraryManager, SimulatorAPI */
 
 /* define the JS functions to call the SimulatorAPI */
-mergeInto(LibraryManager.library, {
+/*mergeInto(LibraryManager.library, {
   cc_ledRed: function(status) {
     SimulatorAPI.ledRed(status);
   },
@@ -23,4 +23,4 @@ mergeInto(LibraryManager.library, {
   cc_buttonPressed: function(nbr) {
     return SimulatorAPI.getButtonState(nbr);
   }
-});
+});*/
