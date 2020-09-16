@@ -165,14 +165,18 @@ function pauseSimulator() {
   }
 }
 
+function clearConsole() {
+  let consoleBody = document.getElementById('console-body');
+  consoleBody.textContent = '';
+}
+
 function addMessageToConsole(msg, iserr = false) {
-  console.log('called with', msg, iserr);
+  console.log(msg);
   let consoleBody = document.getElementById('console-body');
   if (!iserr) {
-    console.log('displaying normal!')
-    consoleBody.textContent += msg;
+    let msgContents = document.createTextNode(msg);
+    consoleBody.appendChild(msgContents);
   } else {
-    console.log('displaying error!')
     // want to display errors in red
     let mySpan = document.createElement('span');
     let spanContents = document.createTextNode(msg);
@@ -187,6 +191,7 @@ function addMessageToConsole(msg, iserr = false) {
 }
 
 function compileCode(cb) {
+  clearConsole();
   fetch('/compile', {
     method: 'POST',
     headers: {
