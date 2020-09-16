@@ -169,8 +169,10 @@ function addMessageToConsole(msg, iserr = false) {
   console.log('called with', msg, iserr);
   let consoleBody = document.getElementById('console-body');
   if (!iserr) {
+    console.log('displaying normal!')
     consoleBody.textContent += msg;
   } else {
+    console.log('displaying error!')
     // want to display errors in red
     let mySpan = document.createElement('span');
     let spanContents = document.createTextNode(msg);
@@ -207,7 +209,6 @@ function compileCode(cb) {
         if (lines[i].indexOf('emcc: error: ') == 0) {
           continue;
         }
-        console.log("adding error message", lines[i]);
         addMessageToConsole(lines[i] + '\n', true);
       }
     }
@@ -221,7 +222,7 @@ function compileCode(cb) {
     }
   })
   .catch((error) => {
-    console.error('Error:', error);
+    addMessageToConsole('Error compiling: ' + error + '\n', true);
   });
 }
 
