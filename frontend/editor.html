@@ -179,8 +179,9 @@ function addMessageToConsole(msg, iserr = false) {
     consoleBody.appendChild(mySpan);
   }
   setTimeout(function() {
-    consoleBody.scrollTop = consoleBody.scrollHeight;
-  }, 100);
+    let consoleWrapper = document.getElementById('console');
+    consoleWrapper.scrollTop = consoleWrapper.scrollHeight;
+  }, 10);
 }
 
 function compileCode(cb) {
@@ -202,8 +203,13 @@ function compileCode(cb) {
     if ('stderr' in data && data.stderr.length > 0) {
       let lines = data.stderr.split('\\n');
       for (i = 0; i < lines.length; i++) {
+        // skip long debug message that kids don't need to see
+        if (lines[i].indexOf('emcc: error: ') == 0) continue;
         addMessageToConsole(lines[i], true);
       }
+    }
+    if ('msg' in data && data.msg.length > 0) {
+      addMessageToConsole(data.msg);
     }
     if ('code' in data && data.code == 0) {
       localStorage.setItem('FILE_LOC', data.path);

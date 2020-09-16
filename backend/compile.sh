@@ -6,4 +6,4 @@
 # ./emsdk activate latest
 # source ./emsdk_env.sh
 
-emcc -x c++ -Iutil/ -O3 -s ASYNCIFY --js-library library.js --bind -o test.js - 
+emcc code.cpp -Iutil/ -O3 -s ASYNCIFY --js-library library.js --bind -o test.js 
