@@ -96,7 +96,7 @@
         Changes saved automatically! &nbsp; &middot; &nbsp;
         <a href="#">Download</a> &nbsp; &middot; &nbsp;
         <a href="#">Check for errors</a> &nbsp; &middot; &nbsp;
-        <a onclick="compileCode()">Compile and Run</a> &nbsp; &middot; &nbsp;
+        <a onclick="compileCode(reloadSimulator)">Compile and Run</a> &nbsp; &middot; &nbsp;
         <a id="simPauser" onclick="pauseSimulator()">Stop Simulator</a>
     </div>
 <div id="editor">#include &lt;Romi32U4.h&gt;
@@ -208,7 +208,7 @@ function compileCode(cb) {
     if ('code' in data && data.code == 0) {
       localStorage.setItem('FILE_LOC', data.path);
       // successful result
-      cb();
+      if (cb) cb();
     }
   })
   .catch((error) => {
