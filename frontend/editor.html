@@ -205,9 +205,9 @@ function compileCode(cb) {
       for (i = 0; i < lines.length; i++) {
         // skip long debug message that kids don't need to see
         if (lines[i].indexOf('emcc: error: ') == 0) {
-          console.log("??? debug");
           continue;
         }
+        console.log("adding error message", lines[i]);
         addMessageToConsole(lines[i], true);
       }
     }
