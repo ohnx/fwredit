@@ -165,8 +165,8 @@ function pauseSimulator() {
   }
 }
 
-function addMessageToConsole(msg, iserr) {
-  console.log(msg);
+function addMessageToConsole(msg, iserr = false) {
+  console.log('called with', msg, iserr);
   let consoleBody = document.getElementById('console-body');
   if (!iserr) {
     consoleBody.textContent += msg;
