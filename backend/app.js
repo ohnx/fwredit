@@ -29,10 +29,15 @@ let compileCode = function(codePath, res, cb) {
   let outputPath = getOutputPath();
   let fsOutputPath = path.join(initWd, 'compile_out', outputPath);
   let childStdout = '', childStderr = '';
-  let child = spawn('emcc', [codePath, '-Iutil/', '-x', 'c++', '-O3',
-                    '-s', 'ASYNCIFY', '--js-library',
-                    'library.js', '--bind', '-o',
-                    fsOutputPath]);
+  let child = spawn('emcc', [codePath,
+                    '-Iutil/',
+                    '-x', 'c++',
+                    '-O3',
+                    '-s', 'ASYNCIFY',
+                    '-s', '\'ASYNCIFY_IMPORTS=["emscripten_sleep"]\'',
+                    '--js-library', 'library.js',
+                    '--bind',
+                    '-o', fsOutputPath]);
 
   // capture&send stdout/stderr
   child.stdout.on('data', function(data) {
