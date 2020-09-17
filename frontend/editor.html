@@ -37,6 +37,9 @@
         font-family: Monospace;
         color: white !important;
     }
+    #fileSelector {
+        display: none;
+    }
     #buttonbar a {
       cursor: pointer;
       display: inline-block;
@@ -97,11 +100,12 @@
 
 <div class="sideLeft">
     <div id="buttonbar">
-        <a onclick="openLocalFile()">Open</a>
+        <a onclick="promptUserFileOpen()">Open</a>
         <a onclick="downloadFile()">Download</a>
         <a onclick="compileCode()">Compile</a>
         <a onclick="compileCode(reloadSimulator)">Compile and Run</a>
         <a id="simPauser" onclick="pauseSimulator()">Stop Simulator</a>
+        <input id="fileSelector" type="file">
     </div>
 <div id="editor">
 </div>
@@ -141,6 +145,14 @@ let saveTimeout = null;
     }
   });
 
+  // hook file selector changes
+  document.getElementById('fileSelector').addEventListener('input', function(evt) {
+    let fn = evt.target.files[0];
+    console.log('Opening local file', fn);
+    openLocalFile(fn);
+  });
+
+  // disable simulator
   const urlParams = new URLSearchParams(window.location.search);
   checkSimulatorDisabled(urlParams.has('disableSimulator'));
   if (urlParams.has('disableSimulator')) {
@@ -174,28 +186,24 @@ function saveLocalStorage() {
   localStorage.setItem('FILE_RAW_CONTENTS', editor.getValue());
 }
 
-function openLocalFile() {
-  let input = document.createElement('input');
-  input.type = 'file';
+function promptUserFileOpen() {
+  document.getElementById('fileSelector').click();
+}
 
-  input.onchange = e => { 
-    // getting a hold of the file reference
-    var file = e.target.files[0];
-
-    // setting up the reader
-    var reader = new FileReader();
-    reader.readAsText(file,'UTF-8');
+function openLocalFile(path) {
+  // setting up the reader
+  var reader = new FileReader();
   
-    // here we tell the reader what to do when it's done reading...
-    reader.onload = readerEvent => {
-      var content = readerEvent.target.result; // this is the content!
-      if (saveTimeout) { clearTimeout(saveTimeout); saveTimeout = null; }
-      localStorage.setItem('FILE_RAW_CONTENTS', content);
-      editor.setValue(content);
-    };
+  // here we tell the reader what to do when it's done reading...
+  reader.onload = readerEvent => {
+    var content = readerEvent.target.result; // this is the content!
+    if (saveTimeout) { clearTimeout(saveTimeout); saveTimeout = null; }
+    localStorage.setItem('FILE_RAW_CONTENTS', content);
+    editor.setValue(content);
   };
 
-  input.click();
+  // read the file
+  reader.readAsText(path, 'UTF-8');
 }
 
 function downloadFile() {
