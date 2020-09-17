@@ -31,12 +31,11 @@ let simulatorCode = function(Ammo) {
   var physicsWorld;
   var time = 0;
   var syncList = [];
+  var mainVehicle;
   
   // car control variables
   var desiredLeftSpeed = 0;
   var desiredRightSpeed = 0;
-
-  var lbrh;
 
   // - Functions -
   function initGraphics() {
@@ -65,9 +64,13 @@ let simulatorCode = function(Ammo) {
     dirLight.position.set( 10, 10, 5 );
     scene.add( dirLight );
 
+    var dirLight2 = new THREE.DirectionalLight( 0xffffff, 0.3 );
+    dirLight2.position.set( 0, 4, -2 );
+    scene.add( dirLight2 );
+
     materialDynamic = new THREE.MeshPhongMaterial( { color:0xfca400 } );
     materialStatic = new THREE.MeshPhongMaterial( { color:0x999999 } );
-    materialInteractive = new THREE.MeshPhongMaterial( { color:0x990000 } );
+    materialInteractive = new THREE.MeshPhongMaterial( { color:0xdd0000 } );
 
     // raytracing
     raycaster = new THREE.Raycaster();
@@ -110,7 +113,7 @@ let simulatorCode = function(Ammo) {
     for (var i = 0; i < syncList.length; i++)
       syncList[i](dt);
     physicsWorld.stepSimulation( dt, 10 );
-    controls.update( dt );
+    //controls.update( dt );
     renderer.render( scene, camera );
     time += dt;
     stats.update();
@@ -118,6 +121,22 @@ let simulatorCode = function(Ammo) {
 
   function keyup(e) {
     if (this.simPause) return;
+    if (e.keyCode == 81) {
+      console.log(mainVehicle.getSteeringValue(0), mainVehicle.getSteeringValue(1));
+    }
+    /*if (e.keyCode == 81) { // 'q', aka "move camera to robot"
+    //     createVehicle(new THREE.Vector3(0, 1, -20), ZERO_QUATERNION);
+    // camera.position.x = -10;
+    // camera.position.y = 10;
+    // camera.position.z = -30;
+    // camera.lookAt(new THREE.Vector3(0, 0, 0));
+      controls.dispose();
+      camera.position.x = carPosition.x - 10;
+      camera.position.y = carPosition.y + 10;
+      camera.position.z = carPosition.z - 10;
+      camera.lookAt(carPosition);
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+    }*/
     /*if(keysActions[e.code]) {
       actions[keysActions[e.code]] = false;
       e.preventDefault();
@@ -225,12 +244,34 @@ let simulatorCode = function(Ammo) {
     var steeringIncrement = .04;
     var steeringClamp = .5;
     var maxEngineForce = 2000;
-    var maxBreakingForce = 100;
+    var maxBreakingForce = 5000;
 
     // Chassis
-    var geometry = new Ammo.btBoxShape(new Ammo.btVector3(chassisWidth / 2, chassisHeight / 2, chassisLength / 2));
-    lbrh = geometry;
-    window.lbrh2 = geometry;
+    var geometry = new Ammo.btCompoundShape();
+    // Main body
+    var geometry1 = new Ammo.btBoxShape(new Ammo.btVector3(chassisWidth / 2, chassisHeight / 2, chassisLength / 2));
+    // add main body to geometry
+    var geo1Transform = new Ammo.btTransform();
+    geo1Transform.setIdentity();
+    geometry.addChildShape(geo1Transform, geometry1);
+
+    // Ball to balance #1
+    var geometry2 = new Ammo.btSphereShape(chassisHeight / 2);
+    // add ball to balance #1 to geometry
+    var geo2Transform = new Ammo.btTransform();
+    geo2Transform.setIdentity();
+    geo2Transform.setOrigin(new Ammo.btVector3(0, -chassisHeight / 2 - 0.2, -chassisLength / 2));
+    geometry.addChildShape(geo2Transform, geometry2);
+
+    // Ball to balance #2
+    var geometry3 = new Ammo.btSphereShape(chassisHeight / 2);
+    // add ball to balance #2 to geometry
+    var geo3Transform = new Ammo.btTransform();
+    geo3Transform.setIdentity();
+    geo3Transform.setOrigin(new Ammo.btVector3(0, -chassisHeight / 2 - 0.2, chassisLength / 2));
+    geometry.addChildShape(geo3Transform, geometry3);
+
+    // misc
     var transform = new Ammo.btTransform();
     transform.setIdentity();
     transform.setOrigin(new Ammo.btVector3(pos.x, pos.y, pos.z));
@@ -249,6 +290,7 @@ let simulatorCode = function(Ammo) {
     var vehicle = new Ammo.btRaycastVehicle(tuning, body, rayCaster);
     vehicle.setCoordinateSystem(0, 1, 2);
     physicsWorld.addAction(vehicle);
+    mainVehicle = vehicle;
 
     // Wheels
     // var FRONT_LEFT = 0;
@@ -289,14 +331,18 @@ let simulatorCode = function(Ammo) {
 
       speedometer.innerHTML = (speed < 0 ? '(R) ' : '') + Math.abs(speed).toFixed(1) + ' km/h';
 
+      // force *should* be the ratio of power to acceleration.
+      // TODO: do this, blah blah blah (desiredLeftSpeed is a power value, not force)
       let leftForce = desiredLeftSpeed;
       let rightForce = desiredRightSpeed;
 
       vehicle.applyEngineForce(leftForce, LEFT_WHEEL);
       vehicle.applyEngineForce(rightForce, RIGHT_WHEEL);
 
-      if (leftForce == 0 && rightForce == 0) {
+      if (leftForce == 0) {
         vehicle.setBrake(maxBreakingForce, LEFT_WHEEL);
+      }
+      if (rightForce == 0) {
         vehicle.setBrake(maxBreakingForce, RIGHT_WHEEL);
       }
 
@@ -336,7 +382,9 @@ let simulatorCode = function(Ammo) {
   }
 
   function createObjects() {
-    createBox(new THREE.Vector3(0, -0.5, 0), ZERO_QUATERNION, 75, 1, 75, 0, 2);
+    //function createBox(pos, quat, w, l, h, mass, friction) {
+    // ground
+    createBox(new THREE.Vector3(0, -0.5, 0), ZERO_QUATERNION, 500, 1, 500, 0, 1.5);
 
     var quaternion = new THREE.Quaternion(0, 0, 0, 1);
     quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 18);
