@@ -136,7 +136,7 @@ let saveTimeout = null;
   // catch whenever user changes the text
   editor.on("input", function() {
     if (!editor.session.getUndoManager().isClean()) {
-      if (saveTimeout) clearTimeout(saveTimeout);
+      if (saveTimeout) { clearTimeout(saveTimeout); saveTimeout = null; }
       saveTimeout = setTimeout(saveLocalStorage, 500);
     }
   });
@@ -189,6 +189,7 @@ function openLocalFile() {
     // here we tell the reader what to do when it's done reading...
     reader.onload = readerEvent => {
       var content = readerEvent.target.result; // this is the content!
+      if (saveTimeout) { clearTimeout(saveTimeout); saveTimeout = null; }
       localStorage.setItem('FILE_RAW_CONTENTS', content);
       editor.setValue(content);
     };
