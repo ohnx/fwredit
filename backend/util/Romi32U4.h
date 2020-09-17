@@ -128,6 +128,7 @@ EmulatedSerialDevice Serial;
 void ledRed(bool on)
 {
     cc_ledRed(on);
+    delay(1); // always give the rest of the js code time to execute
 }
 
 /*! \brief Turns the yellow user LED on pin 13 on or off.
@@ -136,6 +137,7 @@ void ledRed(bool on)
 void ledYellow(bool on)
 {
     cc_ledYellow(on);
+    delay(1); // always give the rest of the js code time to execute
 }
 
 /*! \brief Turns the green user LED (TX) on or off.
@@ -144,6 +146,7 @@ void ledYellow(bool on)
 void ledGreen(bool on)
 {
     cc_ledGreen(on);
+    delay(1); // always give the rest of the js code time to execute
 }
 
 /*! \brief Return false.
@@ -215,6 +218,7 @@ class Romi32U4Motors
         
         // Call the api
         cc_leftMotorSpeed(speed);
+        delay(1); // always give the rest of the js code time to execute
     }
 
     /** \brief Sets the speed for the right motor.
@@ -230,6 +234,7 @@ class Romi32U4Motors
         if (speed < -maxSpeed) speed = -maxSpeed;
         // Call the api
         cc_rightMotorSpeed(speed);
+        delay(1); // always give the rest of the js code time to execute
     }
 
     /** \brief Sets the speed for both motors.
@@ -289,6 +294,7 @@ class ButtonBase {
     }
 
     bool isPressed() {
+        delay(1); // always give the rest of the js code time to execute
         return cc_buttonPressed(_btnNbr) == 1;
     }
 
@@ -337,6 +343,7 @@ void glueSetupAndRun() {
 
     // call the loop() function of the user code
     while (1) {
+        delay(1); // always give the rest of the js code time to execute
         loop();
     }
 }

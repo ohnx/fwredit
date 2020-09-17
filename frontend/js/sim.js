@@ -46,10 +46,10 @@ let simulatorCode = function(Ammo) {
     scene = new THREE.Scene();
 
     camera = new THREE.PerspectiveCamera( 60, container.offsetWidth / container.offsetHeight, 0.2, 2000 );
-    camera.position.x = -4.84;
-    camera.position.y = 4.39;
-    camera.position.z = -35.11;
-    camera.lookAt( new THREE.Vector3( 0.33, -0.40, 0.85 ) );
+    camera.position.x = -10;
+    camera.position.y = 10;
+    camera.position.z = -30;
+    camera.lookAt(new THREE.Vector3(0, 0, 0));
 
     renderer = new THREE.WebGLRenderer({antialias:true});
     renderer.setClearColor( 0xbfd1e5 );
@@ -349,7 +349,7 @@ let simulatorCode = function(Ammo) {
       for (var i = 0; i < nh; i++)
         createBox(new THREE.Vector3(size * j - (size * (nw - 1)) / 2, size * i, 10), ZERO_QUATERNION, size, size, size, 10);
 
-    createVehicle(new THREE.Vector3(0, 4, -20), ZERO_QUATERNION);
+    createVehicle(new THREE.Vector3(0, 1, -20), ZERO_QUATERNION);
   }
 
   // - Init -

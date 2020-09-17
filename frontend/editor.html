@@ -74,26 +74,6 @@
     #console-body {
         white-space: pre-wrap;
     }
-    #viewport {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: pink;
-    }
-    #speedometer {
-      color: #ffffff;
-      background-color: #990000;
-      position: absolute;
-      bottom: 0px;
-      padding: 5px;
-    }
-    #info {
-      position: absolute;
-      top: 0px; width: 100%;
-      padding: 5px;
-    }
 </style>
 </head>
 <body>
@@ -150,6 +130,29 @@ let saveTimeout = null;
     let fn = evt.target.files[0];
     console.log('Opening local file', fn);
     openLocalFile(fn);
+  });
+
+  // drag/drop handling
+  document.getElementById('sideLeft').addEventListener('drop', function(evt) {
+    evt.preventDefault();
+    var i;
+    if (evt.dataTransfer.items) {
+      // Use DataTransferItemList interface to access the file(s)
+      for (i = 0; i < evt.dataTransfer.items.length; i++) {
+        // If dropped items aren't files, reject them
+        if (evt.dataTransfer.items[i].kind === 'file') {
+          var file = evt.dataTransfer.items[i].getAsFile();
+          openLocalFile(file.name);
+          break;
+        }
+      }
+    } else {
+      // Use DataTransfer interface to access the file(s)
+      for (i = 0; i < evt.dataTransfer.files.length; i++) {
+          openLocalFile(evt.dataTransfer.files[i].name);
+          break;
+      }
+    }
   });
 
   // disable simulator
