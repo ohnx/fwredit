@@ -189,6 +189,7 @@ function openLocalFile() {
     // here we tell the reader what to do when it's done reading...
     reader.onload = readerEvent => {
       var content = readerEvent.target.result; // this is the content!
+      localStorage.setItem('FILE_RAW_CONTENTS', content);
       editor.setValue(content);
     };
   };
