@@ -48,6 +48,7 @@ extern "C" {
     void cc_rightMotorSpeed(int speed);
     void cc_serialWrite(unsigned char byte);
     int cc_buttonPressed(int btnNbr);
+    int cc_analogRead(int pinNbr);
 };
 
 /* main arduino api code */
@@ -328,6 +329,17 @@ class Romi32U4ButtonC : public ButtonBase {
 void pinMode(int pin, int mode) {
     (void)pin;
     (void)mode;
+}
+
+// analog pins
+#define A0 14
+#define A1 15
+#define A2 16
+#define A3 17
+#define A4 18
+#define A5 19
+int analogRead(int pin) {
+    return cc_analogRead(pin);
 }
 
 // binding code

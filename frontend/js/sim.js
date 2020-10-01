@@ -1,4 +1,26 @@
 /* global Ammo, THREE, Stats, localStorage */
+
+// The simulator exists in a 500x500 world
+const WORLD_MAX = 200;
+// car starts at x=0, y=1, z=-20
+
+// number of pins
+const NUM_PINS = 20;
+
+let randomizeLightPosn = function() {
+  let newLightPosn = {xPos: 0, zPos: 0};
+
+  var xSgn = Math.random() > 0.5;
+  var xPos = Math.random() * (WORLD_MAX/2 - 50) + 40;
+  newLightPosn.xPos = xSgn ? xPos : -xPos;
+  var zSgn = Math.random() > 0.5;
+  var zPos = Math.random() * (WORLD_MAX/2 - 50) + 40;
+  newLightPosn.zPos = zSgn ? zPos : -zPos;
+
+  localStorage.setItem('LIGHT_POSITION', JSON.stringify(newLightPosn));
+  return newLightPosn;
+};
+
 let simulatorCode = function(Ammo) {
   // - Global variables -
   var DISABLE_DEACTIVATION = 4;
@@ -19,9 +41,14 @@ let simulatorCode = function(Ammo) {
   // Raytracing stuff
   var raycaster;
   var forwardsDirection, carPosition;
+  var arrow = undefined;
 
   // Misc stuff
   var buttons = [false, false, false];
+  var pinValues = new Array(NUM_PINS);
+  for (let pVi = 0; pVi < NUM_PINS; pVi++) {
+    pinValues[pVi] = 0;
+  }
 
   // Physics variables
   var collisionConfiguration;
@@ -31,11 +58,193 @@ let simulatorCode = function(Ammo) {
   var physicsWorld;
   var time = 0;
   var syncList = [];
+  // car stuff
   var mainVehicle;
-  
+  var vehicleChassisMesh;
+  var vehicleWheelMeshes = [];
+  var maxEngineForce = 2000;
+  var maxBreakingForce = 5000;
+  const LEFT_WHEEL = 0;
+  const RIGHT_WHEEL = 1;
+
   // car control variables
   var desiredLeftSpeed = 0;
   var desiredRightSpeed = 0;
+
+  // lab code
+  function lab_init() {
+    lab2_photovore_setup();
+  }
+
+  // LAB 2: PHOTOVORE CODE
+  var lab2_light;
+  var leftSensorOffset;
+  var rightSensorOffset;
+
+  function lab2_photovore_setup() {
+    // the light
+    var geometry = new THREE.SphereBufferGeometry(2, 32, 32);
+    var material = new THREE.MeshBasicMaterial({color: 0xffff00});
+    lab2_light = new THREE.Mesh(geometry, material);
+    // store the last used position of the light
+    let lastLightPosn = localStorage.getItem('LIGHT_POSITION');
+    if (lastLightPosn) {
+      lastLightPosn = JSON.parse(lastLightPosn);
+    } else {
+      lastLightPosn = randomizeLightPosn();
+    }
+    lab2_light.position.set(lastLightPosn.xPos, 2, lastLightPosn.zPos);
+    scene.add(lab2_light);
+
+    // the sensors' offsets (as a percentage of the main reading from -15% to 15%)
+    leftSensorOffset = localStorage.getItem('LEFT_SENSOR_OFFSET');
+    if (!leftSensorOffset) {
+      leftSensorOffset = 0.85 + Math.random() * 0.30; // random offset
+    }
+    rightSensorOffset = localStorage.getItem('RIGHT_SENSOR_OFFSET');
+    if (!rightSensorOffset) {
+      rightSensorOffset = 0.85 + Math.random() * 0.30; // random offset
+    }
+  }
+
+  var debugArrows = new Array();
+  function lab2_photovore_syncfunc(p, q) {
+    // raycast to see if we hit a box
+    carPosition.set(p.x(), p.y(), p.z());
+    forwardsDirection.set(q.x(), q.y(), q.z(), q.w());
+    var vehiclePoint = new THREE.Vector3(0, 0, 1.5);
+    vehiclePoint.applyQuaternion(forwardsDirection);
+
+    // DEBUG: show arrows
+    if (arrow) scene.remove(arrow);
+    arrow = new THREE.ArrowHelper(vehiclePoint, carPosition, 100, 0xff0000);
+    scene.add(arrow);
+    if (debugArrows.length > 0) {
+      for (var dAi = 0; dAi < debugArrows.length; dAi++) {
+        scene.remove(debugArrows[dAi]);
+      }
+      // reset the array
+      debugArrows = [];
+    }
+
+    var leftSensorValue = 0;
+    var rightSensorValue = 0;
+
+    var leftLightStartingPosn = carPosition.clone();
+    var llSPtiltedQuat = new THREE.Quaternion();
+    llSPtiltedQuat.setFromAxisAngle(new THREE.Vector3(0, 1, 0), -45 * Math.PI / 180);
+    var llSPtiltedVec = vehiclePoint.clone();
+    llSPtiltedVec.applyQuaternion(llSPtiltedQuat);
+    leftLightStartingPosn.add(llSPtiltedVec);
+
+    var rightLightStartingPosn = carPosition.clone();
+    var rlSPtiltedQuat = new THREE.Quaternion();
+    rlSPtiltedQuat.setFromAxisAngle(new THREE.Vector3(0, 1, 0), 45 * Math.PI / 180);
+    var rlSPtiltedVec = vehiclePoint.clone();
+    rlSPtiltedVec.applyQuaternion(rlSPtiltedQuat);
+    rightLightStartingPosn.add(rlSPtiltedVec);
+
+    var traceRay = function(isLeft, angle) {
+      var tiltedQuat = new THREE.Quaternion();
+      tiltedQuat.setFromAxisAngle(new THREE.Vector3(0, 1, 0), angle * Math.PI / 180);
+      var tiltedVec = vehiclePoint.clone();
+      tiltedVec.applyQuaternion(tiltedQuat);
+      var startingPos = isLeft ? leftLightStartingPosn : rightLightStartingPosn;
+
+      // debug - show the rays
+      if (isLeft)
+        debugArrows.push(new THREE.ArrowHelper(tiltedVec, startingPos, 100, 0x3300ff));
+      else
+        debugArrows.push(new THREE.ArrowHelper(tiltedVec, startingPos, 100, 0x00ffff));
+      scene.add(debugArrows[debugArrows.length - 1]);
+
+      // trace the ray
+      raycaster.set(startingPos, tiltedVec);
+      var intersects = raycaster.intersectObject(lab2_light);
+      if (intersects.length > 0) {
+        var intersect = intersects[0];
+        // ookayy time to compute the value of the brightness!
+        var baseBrightness = 0;
+        // first off is the distance. max distance is 200, but if we
+        // collide, i still want to show at least a little bit vs. 0.
+        // at some point, we want to have near-1024
+        // for now, let's try the equation 1000000/(x+60)^2
+        // (we want to decay the brightness squared; this seems most realistic)
+        var iDr = intersect.distance + 60;
+        baseBrightness = 1000000/(iDr * iDr);
+        // next, we want to consider the angle at which the ray is cast.
+        // the more "off" it is, the less it should count.
+        // +/- 3 is the midpoint here
+        var offNess = 0;
+        if (isLeft) offNess = angle + 3;
+        else offNess = angle - 3;
+        offNess = Math.abs(offNess);
+        // so the range of offness is [0, 7]... at 0 offness, we want to keep
+        // the value at 1.
+        // for now, let's try the equation 1-0.1x
+        baseBrightness *= (1 - (0.1 * offNess));
+        // finally, let's add a bit of noise. readings can vary a little bit sometimes
+        // maybe only 2% noise
+        baseBrightness *= 0.98 + Math.random() * 0.04;
+        // ok! all ready to add this to the value
+        if (isLeft) leftSensorValue += baseBrightness;
+        else rightSensorValue += baseBrightness;
+      }
+    };
+
+    // left side
+    traceRay(true, 4);
+    traceRay(true, 3);
+    traceRay(true, 2);
+    traceRay(true, 1);
+    traceRay(true, 0);
+    traceRay(true, -1);
+    traceRay(true, -2);
+    traceRay(true, -3);
+    traceRay(true, -4);
+    traceRay(true, -5);
+    traceRay(true, -6);
+    traceRay(true, -7);
+    traceRay(true, -8);
+    traceRay(true, -9);
+    traceRay(true, -10);
+
+    // right side
+    traceRay(false, 10);
+    traceRay(false, 9);
+    traceRay(false, 8);
+    traceRay(false, 7);
+    traceRay(false, 6);
+    traceRay(false, 5);
+    traceRay(false, 4);
+    traceRay(false, 3);
+    traceRay(false, 2);
+    traceRay(false, 1);
+    traceRay(false, 0);
+    traceRay(false, -1);
+    traceRay(false, -2);
+    traceRay(false, -3);
+    traceRay(false, -4);
+
+    // factor in the offsets
+    leftSensorValue *= leftSensorOffset;
+    rightSensorValue *= rightSensorOffset;
+
+    // now the brightnesses should be adjusted. float-ize them and cap them
+    leftSensorValue = Math.round(leftSensorValue);
+    if (leftSensorValue < 0) leftSensorValue = 0;
+    if (leftSensorValue > 1023) leftSensorValue = 1023;
+
+    rightSensorValue = Math.round(rightSensorValue);
+    if (rightSensorValue < 0) rightSensorValue = 0;
+    if (rightSensorValue > 1023) rightSensorValue = 1023;
+
+    // ok, now set the results to the analog pins!
+    // 16 = A2 = left sensor
+    pinValues[16] = leftSensorValue;
+    // 14 = A0 = right sensor
+    pinValues[14] = rightSensorValue;
+  }
 
   // - Functions -
   function initGraphics() {
@@ -221,6 +430,48 @@ let simulatorCode = function(Ammo) {
     return mesh;
   }
 
+  // Sync keybord actions and physics and graphics
+  function car_sync(dt) {
+    var speed = mainVehicle.getCurrentSpeedKmHour();
+
+    speedometer.innerHTML = (speed < 0 ? '(R) ' : '') + Math.abs(speed).toFixed(1) + ' km/h';
+
+    // force *should* be the ratio of power to acceleration.
+    // TODO: do this, blah blah blah (desiredLeftSpeed is a power value, not force)
+    let leftForce = desiredLeftSpeed;
+    let rightForce = desiredRightSpeed;
+
+    mainVehicle.applyEngineForce(leftForce, LEFT_WHEEL);
+    mainVehicle.applyEngineForce(rightForce, RIGHT_WHEEL);
+
+    if (leftForce == 0) {
+      mainVehicle.setBrake(maxBreakingForce, LEFT_WHEEL);
+    }
+    if (rightForce == 0) {
+      mainVehicle.setBrake(maxBreakingForce, RIGHT_WHEEL);
+    }
+
+    var tm, p, q, i;
+    var n = mainVehicle.getNumWheels();
+    for (i = 0; i < n; i++) {
+      mainVehicle.updateWheelTransform(i, true);
+      tm = mainVehicle.getWheelTransformWS(i);
+      p = tm.getOrigin();
+      q = tm.getRotation();
+      vehicleWheelMeshes[i].position.set(p.x(), p.y(), p.z());
+      vehicleWheelMeshes[i].quaternion.set(q.x(), q.y(), q.z(), q.w());
+    }
+
+    tm = mainVehicle.getChassisWorldTransform();
+    p = tm.getOrigin();
+    q = tm.getRotation();
+    vehicleChassisMesh.position.set(p.x(), p.y(), p.z());
+    vehicleChassisMesh.quaternion.set(q.x(), q.y(), q.z(), q.w());
+
+    // TODO: lab2-dependent
+    lab2_photovore_syncfunc(p, q);
+  }
+
   function createVehicle(pos, quat) {
     // Vehicle contants
     var chassisWidth = 3;
@@ -243,8 +494,6 @@ let simulatorCode = function(Ammo) {
 
     var steeringIncrement = .04;
     var steeringClamp = .5;
-    var maxEngineForce = 2000;
-    var maxBreakingForce = 5000;
 
     // Chassis
     var geometry = new Ammo.btCompoundShape();
@@ -282,7 +531,7 @@ let simulatorCode = function(Ammo) {
     var body = new Ammo.btRigidBody(new Ammo.btRigidBodyConstructionInfo(massVehicle, motionState, geometry, localInertia));
     body.setActivationState(DISABLE_DEACTIVATION);
     physicsWorld.addRigidBody(body);
-    var chassisMesh = createChassisMesh(chassisWidth, chassisHeight, chassisLength);
+    vehicleChassisMesh = createChassisMesh(chassisWidth, chassisHeight, chassisLength);
 
     // Raycast Vehicle
     var tuning = new Ammo.btVehicleTuning();
@@ -297,9 +546,6 @@ let simulatorCode = function(Ammo) {
     // var FRONT_RIGHT = 1;
     // var BACK_LEFT = 2;
     // var BACK_RIGHT = 3;
-    var LEFT_WHEEL = 0;
-    var RIGHT_WHEEL = 1;
-    var wheelMeshes = [];
     var wheelDirectionCS0 = new Ammo.btVector3(0, -1, 0);
     var wheelAxleCS = new Ammo.btVector3(-1, 0, 0);
 
@@ -319,85 +565,35 @@ let simulatorCode = function(Ammo) {
       wheelInfo.set_m_frictionSlip(friction);
       wheelInfo.set_m_rollInfluence(rollInfluence);
 
-      wheelMeshes[index] = createWheelMesh(radius, width);
+      vehicleWheelMeshes[index] = createWheelMesh(radius, width);
     }
 
     addWheel(false, new Ammo.btVector3(wheelHalfTrackBack, wheelAxisHeightBack, wheelAxisPositionBack), wheelRadiusBack, wheelWidthBack, LEFT_WHEEL);
     addWheel(false, new Ammo.btVector3(-wheelHalfTrackBack, wheelAxisHeightBack, wheelAxisPositionBack), wheelRadiusBack, wheelWidthBack, RIGHT_WHEEL);
 
-    // Sync keybord actions and physics and graphics
-    function sync(dt) {
-      var speed = vehicle.getCurrentSpeedKmHour();
-
-      speedometer.innerHTML = (speed < 0 ? '(R) ' : '') + Math.abs(speed).toFixed(1) + ' km/h';
-
-      // force *should* be the ratio of power to acceleration.
-      // TODO: do this, blah blah blah (desiredLeftSpeed is a power value, not force)
-      let leftForce = desiredLeftSpeed;
-      let rightForce = desiredRightSpeed;
-
-      vehicle.applyEngineForce(leftForce, LEFT_WHEEL);
-      vehicle.applyEngineForce(rightForce, RIGHT_WHEEL);
-
-      if (leftForce == 0) {
-        vehicle.setBrake(maxBreakingForce, LEFT_WHEEL);
-      }
-      if (rightForce == 0) {
-        vehicle.setBrake(maxBreakingForce, RIGHT_WHEEL);
-      }
-
-      var tm, p, q, i;
-      var n = vehicle.getNumWheels();
-      for (i = 0; i < n; i++) {
-        vehicle.updateWheelTransform(i, true);
-        tm = vehicle.getWheelTransformWS(i);
-        p = tm.getOrigin();
-        q = tm.getRotation();
-        wheelMeshes[i].position.set(p.x(), p.y(), p.z());
-        wheelMeshes[i].quaternion.set(q.x(), q.y(), q.z(), q.w());
-      }
-
-      tm = vehicle.getChassisWorldTransform();
-      p = tm.getOrigin();
-      q = tm.getRotation();
-      chassisMesh.position.set(p.x(), p.y(), p.z());
-      chassisMesh.quaternion.set(q.x(), q.y(), q.z(), q.w());
-      
-      // raycast to see if we hit a box
-      carPosition.set(p.x(), p.y(), p.z());
-      forwardsDirection.set(q.x(), q.y(), q.z(), q.w());
-      var vehiclePoint = new THREE.Vector3(0, 0, 1);
-      vehiclePoint.applyQuaternion(forwardsDirection);
-      raycaster.set(carPosition, vehiclePoint);
-      var intersects = raycaster.intersectObjects(cubes);
-      if (intersects.length > 0) {
-        // intersected with something
-        var intersect = intersects[0];
-//            debugger;
-        intersect.object.material.color.set('#0f0');
-      }
-    }
-
-    syncList.push(sync);
+    syncList.push(car_sync);
   }
 
   function createObjects() {
     //function createBox(pos, quat, w, l, h, mass, friction) {
     // ground
-    createBox(new THREE.Vector3(0, -0.5, 0), ZERO_QUATERNION, 500, 1, 500, 0, 1.5);
+    createBox(new THREE.Vector3(0, -0.5, 0), ZERO_QUATERNION, WORLD_MAX, 1, WORLD_MAX, 0, 1.5);
 
-    var quaternion = new THREE.Quaternion(0, 0, 0, 1);
-    quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 18);
-    createBox(new THREE.Vector3(0, -1.5, 0), quaternion, 8, 4, 10, 0);
+    //var quaternion = new THREE.Quaternion(0, 0, 0, 1);
+    //quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 18);
+    //createBox(new THREE.Vector3(0, -1.5, 0), quaternion, 8, 4, 10, 0);
 
-    var size = .75;
-    var nw = 8;
-    var nh = 6;
-    for (var j = 0; j < nw; j++)
-      for (var i = 0; i < nh; i++)
-        createBox(new THREE.Vector3(size * j - (size * (nw - 1)) / 2, size * i, 10), ZERO_QUATERNION, size, size, size, 10);
+    //var size = .75;
+    //var nw = 8;
+    //var nh = 6;
+    //for (var j = 0; j < nw; j++)
+    //  for (var i = 0; i < nh; i++)
+    //    createBox(new THREE.Vector3(size * j - (size * (nw - 1)) / 2, size * i, 10), ZERO_QUATERNION, size, size, size, 10);
 
     createVehicle(new THREE.Vector3(0, 1, -20), ZERO_QUATERNION);
+
+    // call lab code
+    lab_init();
   }
 
   // - Init -
@@ -405,7 +601,20 @@ let simulatorCode = function(Ammo) {
   initPhysics();
   createObjects();
   this.tick();
-  
+
+
+
+// BEGIN BLOCK - API CODE
+
+
+
+
+
+
+
+
+
+
   // Controls
   this.play = function() {
     this.simPause = false;
@@ -415,6 +624,11 @@ let simulatorCode = function(Ammo) {
   this.pause = function() {
     this.simPause = true;
   };
+
+  document.getElementById('btnRandomizeLightPos').addEventListener('click', function(e) {
+      randomizeLightPosn();
+      window.location.reload(false);
+  });
 
   document.getElementById('btnA').addEventListener('click', function(e) {
     if (!buttons[0]) {
@@ -454,11 +668,9 @@ let simulatorCode = function(Ammo) {
     // Motors
     this.Motors = {
       setLeftSpeed: function(speed) {
-        console.log('assign left speed ', speed);
         desiredLeftSpeed = speed / 300 * 2000;
       },
       setRightSpeed: function(speed) {
-        console.log('assign right speed ', speed);
         desiredRightSpeed = speed / 300 * 2000;
       }
     };
@@ -467,7 +679,6 @@ let simulatorCode = function(Ammo) {
     this.getButtonState = function(idx) {
       if (idx >= buttons.length || idx < 0) return 0;
       // use ints here to avoid bools
-      console.log('button check: ', idx);
       return buttons[idx] ? 1 : 0;
     };
 
@@ -507,12 +718,18 @@ let simulatorCode = function(Ammo) {
     this.serialPrint = function(str) {
       if (serialCallback) serialCallback(str);
     };
+
+    // analog read
+    this.readPin = function(pin) {
+      if (pin >= NUM_PINS || pin < 0) return 0;
+      // expect pin states to be correct [0, 1023] int already
+      return pinValues[pin];
+    };
   };
   this.API = new apiCode(this);
 
   this.run = function(path) {
     if (this.lastSimulationCode) {
-      console.log('Clearing existing item');
       document.head.removeChild(document.getElementById(this.lastSimulationCode));
       Module = Object.assign({}, defaultModule);
     }

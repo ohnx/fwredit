@@ -22,5 +22,8 @@ mergeInto(LibraryManager.library, {
   },
   cc_buttonPressed: function(nbr) {
     return SimulatorAPI.getButtonState(nbr);
+  },
+  cc_analogRead: function(pinNbr) {
+    return SimulatorAPI.readPin(pinNbr);
   }
 });

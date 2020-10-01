@@ -58,8 +58,8 @@
         -webkit-tap-highlight-color: rgba(255, 255, 255, 0); /* mobile webkit */
       }
       .circle {
-        display: inline-block;
         background: gray;
+        display: inline-block;
         height: 2em;
         width: 2em;
         border-radius: 100%;
@@ -78,13 +78,21 @@
         color: black;
       }
       .btn {
+        background: gray;
         cursor: pointer;
+        display: inline-block;
+        height: 2em;
+        line-height: 2em;
+        color: white;
       }
       .btn:hover {
         background: darkgray;
       }
       .enabled.btn {
         background: black;
+      }
+      #btnRandomizeLightPos {
+        padding: 0 0.5em;
       }
 </style>
 </head>
@@ -100,6 +108,10 @@
       <div id="btnA" class="circle btn">A</div>
       <div id="btnB" class="circle btn">B</div>
       <div id="btnC" class="circle btn">C</div>
+      &nbsp; &nbsp; &nbsp;
+      <div id="btnRandomizeLightPos" class="btn">
+        Randomize light position
+      </div>
     </div>
     <div id="container">
         <h1>Loading simulator...</h1>
