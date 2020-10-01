@@ -70,6 +70,12 @@ let simulatorCode = function(Ammo) {
   // car control variables
   var desiredLeftSpeed = 0;
   var desiredRightSpeed = 0;
+  var lastLeftSpeed = 0;
+  var lastRightSpeed = 0;
+  var leftBreakCounter = 0;
+  var rightBreakCounter = 0;
+  var leftBreakAmt = 0;
+  var rightBreakAmt = 0;
 
   // lab code
   function lab_init() {
@@ -80,10 +86,15 @@ let simulatorCode = function(Ammo) {
   var lab2_light;
   var leftSensorOffset;
   var rightSensorOffset;
+  const NUM_RAYS = 50;
+  const LEFT_START = 45;
+  const RIGHT_START = 5;
+  const LEFT_END = LEFT_START - NUM_RAYS;
+  const RIGHT_END = RIGHT_START - NUM_RAYS;
 
   function lab2_photovore_setup() {
     // the light
-    var geometry = new THREE.SphereBufferGeometry(2, 32, 32);
+    var geometry = new THREE.SphereBufferGeometry(3, 32, 32);
     var material = new THREE.MeshBasicMaterial({color: 0xffff00});
     lab2_light = new THREE.Mesh(geometry, material);
     // store the last used position of the light
@@ -100,10 +111,12 @@ let simulatorCode = function(Ammo) {
     leftSensorOffset = localStorage.getItem('LEFT_SENSOR_OFFSET');
     if (!leftSensorOffset) {
       leftSensorOffset = 0.85 + Math.random() * 0.30; // random offset
+      localStorage.setItem('LEFT_SENSOR_OFFSET', leftSensorOffset);
     }
     rightSensorOffset = localStorage.getItem('RIGHT_SENSOR_OFFSET');
     if (!rightSensorOffset) {
       rightSensorOffset = 0.85 + Math.random() * 0.30; // random offset
+      localStorage.setItem('RIGHT_SENSOR_OFFSET', rightSensorOffset);
     }
   }
 
@@ -112,7 +125,7 @@ let simulatorCode = function(Ammo) {
     // raycast to see if we hit a box
     carPosition.set(p.x(), p.y(), p.z());
     forwardsDirection.set(q.x(), q.y(), q.z(), q.w());
-    var vehiclePoint = new THREE.Vector3(0, 0, 1.5);
+    var vehiclePoint = new THREE.Vector3(0, 0, 1);
     vehiclePoint.applyQuaternion(forwardsDirection);
 
     // DEBUG: show arrows
@@ -127,19 +140,20 @@ let simulatorCode = function(Ammo) {
       debugArrows = [];
     }
 
+    // fancy stuff to raytrace to the light now!
     var leftSensorValue = 0;
     var rightSensorValue = 0;
 
     var leftLightStartingPosn = carPosition.clone();
     var llSPtiltedQuat = new THREE.Quaternion();
-    llSPtiltedQuat.setFromAxisAngle(new THREE.Vector3(0, 1, 0), -45 * Math.PI / 180);
+    llSPtiltedQuat.setFromAxisAngle(new THREE.Vector3(0, 1, 0), 45 * Math.PI / 180);
     var llSPtiltedVec = vehiclePoint.clone();
     llSPtiltedVec.applyQuaternion(llSPtiltedQuat);
     leftLightStartingPosn.add(llSPtiltedVec);
 
     var rightLightStartingPosn = carPosition.clone();
     var rlSPtiltedQuat = new THREE.Quaternion();
-    rlSPtiltedQuat.setFromAxisAngle(new THREE.Vector3(0, 1, 0), 45 * Math.PI / 180);
+    rlSPtiltedQuat.setFromAxisAngle(new THREE.Vector3(0, 1, 0), -45 * Math.PI / 180);
     var rlSPtiltedVec = vehiclePoint.clone();
     rlSPtiltedVec.applyQuaternion(rlSPtiltedQuat);
     rightLightStartingPosn.add(rlSPtiltedVec);
@@ -160,7 +174,7 @@ let simulatorCode = function(Ammo) {
 
       // trace the ray
       raycaster.set(startingPos, tiltedVec);
-      var intersects = raycaster.intersectObject(lab2_light);
+      var intersects = raycaster.intersectObjects([lab2_light]);
       if (intersects.length > 0) {
         var intersect = intersects[0];
         // ookayy time to compute the value of the brightness!
@@ -171,18 +185,18 @@ let simulatorCode = function(Ammo) {
         // for now, let's try the equation 1000000/(x+60)^2
         // (we want to decay the brightness squared; this seems most realistic)
         var iDr = intersect.distance + 60;
-        baseBrightness = 1000000/(iDr * iDr);
+        baseBrightness = 5000000/(iDr * iDr);
         // next, we want to consider the angle at which the ray is cast.
         // the more "off" it is, the less it should count.
-        // +/- 3 is the midpoint here
+        // +/- 25 is the midpoint here
         var offNess = 0;
-        if (isLeft) offNess = angle + 3;
-        else offNess = angle - 3;
+        if (isLeft) offNess = angle + 25;
+        else offNess = angle - 25;
         offNess = Math.abs(offNess);
-        // so the range of offness is [0, 7]... at 0 offness, we want to keep
+        // so the range of offness is [0, 25]... at 0 offness, we want to keep
         // the value at 1.
-        // for now, let's try the equation 1-0.1x
-        baseBrightness *= (1 - (0.1 * offNess));
+        // for now, let's try the equation 1-0.0002x^2
+        baseBrightness *= (1 - (0.0002 * offNess * offNess));
         // finally, let's add a bit of noise. readings can vary a little bit sometimes
         // maybe only 2% noise
         baseBrightness *= 0.98 + Math.random() * 0.04;
@@ -192,39 +206,16 @@ let simulatorCode = function(Ammo) {
       }
     };
 
+    var i = 0;
     // left side
-    traceRay(true, 4);
-    traceRay(true, 3);
-    traceRay(true, 2);
-    traceRay(true, 1);
-    traceRay(true, 0);
-    traceRay(true, -1);
-    traceRay(true, -2);
-    traceRay(true, -3);
-    traceRay(true, -4);
-    traceRay(true, -5);
-    traceRay(true, -6);
-    traceRay(true, -7);
-    traceRay(true, -8);
-    traceRay(true, -9);
-    traceRay(true, -10);
+    for (i = LEFT_START; i >= LEFT_END; i--) {
+      traceRay(true, i);
+    }
 
     // right side
-    traceRay(false, 10);
-    traceRay(false, 9);
-    traceRay(false, 8);
-    traceRay(false, 7);
-    traceRay(false, 6);
-    traceRay(false, 5);
-    traceRay(false, 4);
-    traceRay(false, 3);
-    traceRay(false, 2);
-    traceRay(false, 1);
-    traceRay(false, 0);
-    traceRay(false, -1);
-    traceRay(false, -2);
-    traceRay(false, -3);
-    traceRay(false, -4);
+    for (i = RIGHT_START; i >= RIGHT_END; i--) {
+      traceRay(false, i);
+    }
 
     // factor in the offsets
     leftSensorValue *= leftSensorOffset;
@@ -441,15 +432,77 @@ let simulatorCode = function(Ammo) {
     let leftForce = desiredLeftSpeed;
     let rightForce = desiredRightSpeed;
 
-    mainVehicle.applyEngineForce(leftForce, LEFT_WHEEL);
-    mainVehicle.applyEngineForce(rightForce, RIGHT_WHEEL);
+    // for this lab only, scale down the speed (cap it at 5 km/h)
+    scale = 1 - 0.05*speed*speed;
+    //if (scale < 0) scale = 0;
 
     if (leftForce == 0) {
       mainVehicle.setBrake(maxBreakingForce, LEFT_WHEEL);
+    } else {
+      leftForce *= scale;
     }
     if (rightForce == 0) {
       mainVehicle.setBrake(maxBreakingForce, RIGHT_WHEEL);
+    } else {
+      rightForce *= scale;
     }
+
+    if (lastLeftSpeed > desiredLeftSpeed) {
+      leftBreakAmt = lastLeftSpeed - desiredLeftSpeed;
+      leftBreakCounter = 10;
+    }
+    if (leftBreakCounter) { console.log('applying left break', leftBreakAmt);
+      mainVehicle.applyEngineForce(-leftBreakAmt * 2, LEFT_WHEEL);
+      leftBreakCounter--;
+    } else {
+      mainVehicle.applyEngineForce(leftForce, LEFT_WHEEL);
+    }
+
+    if (lastRightSpeed > desiredRightSpeed) {
+      rightBreakCounter = 10;
+      rightBreakAmt = (lastRightSpeed - desiredRightSpeed);
+    }
+    if (rightBreakCounter) { console.log('applying right break', rightBreakAmt);
+      mainVehicle.applyEngineForce(-rightBreakAmt * 2, RIGHT_WHEEL);
+      rightBreakCounter--;
+    } else {
+      mainVehicle.applyEngineForce(rightForce, RIGHT_WHEEL);
+    }
+
+    lastLeftSpeed = desiredLeftSpeed;
+    lastRightSpeed = desiredRightSpeed;
+
+/*
+    // adjust speed to 0 if we are changing it
+    if (speed > 5 && lastLeftSpeed > desiredLeftSpeed) {
+      leftBreakCounter = 4;
+      leftBreakAmt = (lastLeftSpeed - desiredLeftSpeed);
+    }
+    if (leftBreakCounter) { console.log('applying break', leftBreakAmt);
+      // apply a small braking force
+      mainVehicle.setBrake(leftBreakAmt, LEFT_WHEEL);
+      leftForce *= 0;
+      //rightForce *= 0.5;
+      leftBreakCounter--;
+    } else {
+      mainVehicle.setBrake(0, LEFT_WHEEL);
+    }
+    if (speed > 5 && lastRightSpeed > desiredRightSpeed) {
+      rightBreakCounter = 4;
+      rightBreakAmt = (lastRightSpeed - desiredRightSpeed);
+    }
+    if (rightBreakCounter) { console.log('applying break', rightBreakAmt, maxBreakingForce);
+      // apply a small braking force
+      mainVehicle.setBrake(rightBreakAmt, RIGHT_WHEEL);
+      rightForce *= 0;
+      //leftForce *= 0.5;
+      rightBreakCounter--;
+    } else {
+      mainVehicle.setBrake(0, RIGHT_WHEEL);
+    }
+    lastLeftSpeed = desiredLeftSpeed;
+    lastRightSpeed = desiredRightSpeed;
+*/
 
     var tm, p, q, i;
     var n = mainVehicle.getNumWheels();
@@ -577,7 +630,7 @@ let simulatorCode = function(Ammo) {
   function createObjects() {
     //function createBox(pos, quat, w, l, h, mass, friction) {
     // ground
-    createBox(new THREE.Vector3(0, -0.5, 0), ZERO_QUATERNION, WORLD_MAX, 1, WORLD_MAX, 0, 1.5);
+    createBox(new THREE.Vector3(0, -0.5, 0), ZERO_QUATERNION, WORLD_MAX, 1, WORLD_MAX, 0, 4.5);
 
     //var quaternion = new THREE.Quaternion(0, 0, 0, 1);
     //quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 18);
@@ -668,10 +721,11 @@ let simulatorCode = function(Ammo) {
     // Motors
     this.Motors = {
       setLeftSpeed: function(speed) {
-        desiredLeftSpeed = speed / 300 * 2000;
+        // TODO: TEMPORARY ADJUSTMENT (used to be * 2000)
+        desiredLeftSpeed = speed / 300 * 200;
       },
       setRightSpeed: function(speed) {
-        desiredRightSpeed = speed / 300 * 2000;
+        desiredRightSpeed = speed / 300 * 200;
       }
     };
 
@@ -738,7 +792,7 @@ let simulatorCode = function(Ammo) {
       this.lastSimulationCode = elemId;
     }.bind(this));
   };
-  
+
   this.registerSerialReceiver = function(cbfn) {
     serialCallback = cbfn;
   };

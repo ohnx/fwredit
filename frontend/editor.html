@@ -260,7 +260,6 @@ function clearConsole() {
 }
 
 function addMessageToConsole(msg, iserr = false) {
-  console.log(msg);
   let consoleBody = document.getElementById('console-body');
   if (!iserr) {
     let msgContents = document.createTextNode(msg);
