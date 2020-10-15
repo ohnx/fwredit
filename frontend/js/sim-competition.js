@@ -95,7 +95,7 @@ let simulatorCode = function(Ammo) {
   let zBase = new THREE.Vector3(0, 1, 0);
   let boxMeshes = [];
   let lights = [];
-  let antiWallRaycaster = new THREE.Raycaster(null, null, 0, 1);
+  let antiWallRaycaster = new THREE.Raycaster(zBase, zBase, 0, 1);
 
   function lab2_photovore_setup() {
     // the sensors' offsets (as a percentage of the main reading from -15% to 15%)
@@ -469,6 +469,8 @@ let simulatorCode = function(Ammo) {
 
       syncList.push(sync);
     }
+    
+    return mesh;
   }
 
   function createWheelMesh(radius, width) {
@@ -706,11 +708,6 @@ let simulatorCode = function(Ammo) {
   this.pause = function() {
     this.simPause = true;
   };
-
-  document.getElementById('btnRandomizeLightPos').addEventListener('click', function(e) {
-      randomizeLightPosn();
-      window.location.reload(false);
-  });
 
   document.getElementById('btnA').addEventListener('click', function(e) {
     if (!buttons[0]) {
