@@ -95,7 +95,6 @@ let simulatorCode = function(Ammo) {
   let zBase = new THREE.Vector3(0, 1, 0);
   let boxMeshes = [];
   let lights = [];
-  let antiWallRaycaster = new THREE.Raycaster(zBase, zBase, 0, 1);
 
   function lab2_photovore_setup() {
     // the sensors' offsets (as a percentage of the main reading from -15% to 15%)
@@ -225,7 +224,6 @@ let simulatorCode = function(Ammo) {
 
       // trace the ray
       raycaster.set(startingPos, tiltedVec);
-      antiWallRaycaster.set(startingPos, tiltedVec);
       var intersects = raycaster.intersectObjects([lab2_light]);
       if (intersects.length > 0) {
         var intersect = intersects[0];
@@ -258,11 +256,6 @@ let simulatorCode = function(Ammo) {
         // ok! all ready to add this to the value
         if (isLeft) leftSensorValue += baseBrightness;
         else rightSensorValue += baseBrightness;
-      }
-      var intersects2 = antiWallRaycaster.intersectObjects(boxMeshes);
-      if (intersects2.length > 0) {
-        if (isLeft) leftSensorValue -= 100;
-        else rightSensorValue -= 100;
       }
     };
 
