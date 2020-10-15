@@ -110,6 +110,7 @@ let simulatorCode = function(Ammo) {
     }
 
     // additional stuff
+    /*
     let boxPos1 = new THREE.Vector3(0, 5, -10);
     let boxQuat1 = new THREE.Quaternion();
     boxQuat1.identity();
@@ -143,7 +144,7 @@ let simulatorCode = function(Ammo) {
 
     boxPos1.set(-23.5, 2.5, -50);
     boxMeshes.push(createBox(boxPos1, boxQuat1, 11, 5, 1));
-
+*/
     // the light
     var geometry = new THREE.SphereBufferGeometry(3, 32, 32);
     var material = new THREE.MeshBasicMaterial({color: 0xffff00});
@@ -154,16 +155,19 @@ let simulatorCode = function(Ammo) {
     lights.push(lab2_light);
 
     // additional lights
+    material = new THREE.MeshBasicMaterial({color: 0x00ff00});
     lights.push(new THREE.Mesh(geometry, material));
     lights[lights.length-1].position.set(15, 2, 0);
     scene.add(lights[lights.length-1]);
 
     // additional lights
+    material = new THREE.MeshBasicMaterial({color: 0x00ff00});
     lights.push(new THREE.Mesh(geometry, material));
     lights[lights.length-1].position.set(-25, 2, 5);
     scene.add(lights[lights.length-1]);
 
     // additional lights
+    material = new THREE.MeshBasicMaterial({color: 0x00ff00});
     lights.push(new THREE.Mesh(geometry, material));
     lights[lights.length-1].position.set(-23.5, 2, -45);
     scene.add(lights[lights.length-1]);
@@ -291,7 +295,9 @@ let simulatorCode = function(Ammo) {
 
     // delete old light
     if (next_lab2_light) {
+      scene.remove(lab2_light);
       lab2_light = next_lab2_light;
+      lab2_light.material.color.set('#ff0');
       lights.splice(0, 1);
     }
   }
