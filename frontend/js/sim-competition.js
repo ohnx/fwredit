@@ -93,22 +93,11 @@ let simulatorCode = function(Ammo) {
   const LEFT_END = LEFT_START - NUM_RAYS;
   const RIGHT_END = RIGHT_START - NUM_RAYS;
   let zBase = new THREE.Vector3(0, 1, 0);
+  let boxMeshes = [];
+  let lights = [];
+  let antiWallRaycaster = new THREE.Raycaster(null, null, 0, 1);
 
   function lab2_photovore_setup() {
-    // the light
-    var geometry = new THREE.SphereBufferGeometry(3, 32, 32);
-    var material = new THREE.MeshBasicMaterial({color: 0xffff00});
-    lab2_light = new THREE.Mesh(geometry, material);
-    // store the last used position of the light
-    let lastLightPosn = localStorage.getItem('LIGHT_POSITION');
-    if (lastLightPosn) {
-      lastLightPosn = JSON.parse(lastLightPosn);
-    } else {
-      lastLightPosn = randomizeLightPosn();
-    }
-    lab2_light.position.set(lastLightPosn.xPos, 2, lastLightPosn.zPos);
-    scene.add(lab2_light);
-
     // the sensors' offsets (as a percentage of the main reading from -15% to 15%)
     leftSensorOffset = localStorage.getItem('LEFT_SENSOR_OFFSET');
     if (!leftSensorOffset) {
@@ -120,6 +109,65 @@ let simulatorCode = function(Ammo) {
       rightSensorOffset = 0.85 + Math.random() * 0.30; // random offset
       localStorage.setItem('RIGHT_SENSOR_OFFSET', rightSensorOffset);
     }
+
+    // additional stuff
+    let boxPos1 = new THREE.Vector3(0, 5, -10);
+    let boxQuat1 = new THREE.Quaternion();
+    boxQuat1.identity();
+
+    boxPos1.set(0, 2.5, -10);
+    boxMeshes.push(createBox(boxPos1, boxQuat1, 20, 5, 1));
+
+    boxPos1.set(10, 2.5, -20);
+    boxMeshes.push(createBox(boxPos1, boxQuat1, 1, 5, 20));
+
+    boxPos1.set(-10, 2.5, -20);
+    boxMeshes.push(createBox(boxPos1, boxQuat1, 1, 5, 20));
+
+    boxPos1.set(0, 2.5, -40);
+    boxMeshes.push(createBox(boxPos1, boxQuat1, 40, 5, 1));
+
+    boxPos1.set(-20, 2.5, -25);
+    boxMeshes.push(createBox(boxPos1, boxQuat1, 1, 5, 50));
+
+    boxPos1.set(20, 2.5, -15.5);
+    boxMeshes.push(createBox(boxPos1, boxQuat1, 1, 5, 51));
+
+    boxPos1.set(-5, 2.5, 0);
+    boxMeshes.push(createBox(boxPos1, boxQuat1, 30, 5, 1));
+
+    boxPos1.set(-5, 2.5, 11);
+    boxMeshes.push(createBox(boxPos1, boxQuat1, 50, 5, 1));
+
+    boxPos1.set(-30, 2.5, -22);
+    boxMeshes.push(createBox(boxPos1, boxQuat1, 1, 5, 65));
+
+    boxPos1.set(-23.5, 2.5, -50);
+    boxMeshes.push(createBox(boxPos1, boxQuat1, 11, 5, 1));
+
+    // the light
+    var geometry = new THREE.SphereBufferGeometry(3, 32, 32);
+    var material = new THREE.MeshBasicMaterial({color: 0xffff00});
+    lab2_light = new THREE.Mesh(geometry, material);
+
+    lab2_light.position.set(0, 2, -35);
+    scene.add(lab2_light);
+    lights.push(lab2_light);
+
+    // additional lights
+    lights.push(new THREE.Mesh(geometry, material));
+    lights[lights.length-1].position.set(15, 2, 0);
+    scene.add(lights[lights.length-1]);
+
+    // additional lights
+    lights.push(new THREE.Mesh(geometry, material));
+    lights[lights.length-1].position.set(-25, 2, 5);
+    scene.add(lights[lights.length-1]);
+
+    // additional lights
+    lights.push(new THREE.Mesh(geometry, material));
+    lights[lights.length-1].position.set(-23.5, 2, -45);
+    scene.add(lights[lights.length-1]);
   }
 
   var debugArrows = new Array();
@@ -160,6 +208,7 @@ let simulatorCode = function(Ammo) {
     rlSPtiltedVec.applyQuaternion(rlSPtiltedQuat);
     rightLightStartingPosn.add(rlSPtiltedVec);
 
+    let next_lab2_light = undefined;
     var traceRay = function(isLeft, angle) {
       var tiltedQuat = new THREE.Quaternion();
       tiltedQuat.setFromAxisAngle(zBase, angle * Math.PI / 180);
@@ -176,9 +225,13 @@ let simulatorCode = function(Ammo) {
 
       // trace the ray
       raycaster.set(startingPos, tiltedVec);
+      antiWallRaycaster.set(startingPos, tiltedVec);
       var intersects = raycaster.intersectObjects([lab2_light]);
       if (intersects.length > 0) {
         var intersect = intersects[0];
+        if (intersect.distance <= 10) {
+          next_lab2_light = lights[0];
+        }
         // ookayy time to compute the value of the brightness!
         var baseBrightness = 0;
         // first off is the distance. max distance is 200, but if we
@@ -206,6 +259,11 @@ let simulatorCode = function(Ammo) {
         if (isLeft) leftSensorValue += baseBrightness;
         else rightSensorValue += baseBrightness;
       }
+      var intersects2 = antiWallRaycaster.intersectObjects(boxMeshes);
+      if (intersects2.length > 0) {
+        if (isLeft) leftSensorValue -= 100;
+        else rightSensorValue -= 100;
+      }
     };
 
     var i = 0;
@@ -225,11 +283,11 @@ let simulatorCode = function(Ammo) {
 
     // now the brightnesses should be adjusted. float-ize them and cap them
     leftSensorValue = Math.round(leftSensorValue);
-    if (leftSensorValue < 0) leftSensorValue = 0;
+    if (leftSensorValue < -1023) leftSensorValue = -1023;
     if (leftSensorValue > 1023) leftSensorValue = 1023;
 
     rightSensorValue = Math.round(rightSensorValue);
-    if (rightSensorValue < 0) rightSensorValue = 0;
+    if (rightSensorValue < -1023) rightSensorValue = -1023;
     if (rightSensorValue > 1023) rightSensorValue = 1023;
 
     // ok, now set the results to the analog pins!
@@ -237,6 +295,12 @@ let simulatorCode = function(Ammo) {
     pinValues[16] = leftSensorValue;
     // 14 = A0 = right sensor
     pinValues[14] = rightSensorValue;
+
+    // delete old light
+    if (next_lab2_light) {
+      lab2_light = next_lab2_light;
+      lights.splice(0, 1);
+    }
   }
 
   // - Functions -
