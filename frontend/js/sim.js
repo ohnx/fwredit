@@ -56,12 +56,13 @@ let simulatorCode = function(Ammo) {
   var broadphase;
   var solver;
   var physicsWorld;
-  var time = 0;
   var syncList = [];
+  var time = 0;
   // car stuff
   var mainVehicle;
   var vehicleChassisMesh;
   var vehicleWheelMeshes = [];
+  var wheelRotations = [];
   var maxEngineForce = 2000;
   var maxBreakingForce = 5000;
   const LEFT_WHEEL = 0;
@@ -70,16 +71,16 @@ let simulatorCode = function(Ammo) {
   // car control variables
   var desiredLeftSpeed = 0;
   var desiredRightSpeed = 0;
-  var lastLeftSpeed = 0;
-  var lastRightSpeed = 0;
-  var leftBreakCounter = 0;
-  var rightBreakCounter = 0;
-  var leftBreakAmt = 0;
-  var rightBreakAmt = 0;
+
+  var pointingUp = new THREE.Vector3(0, 1, 0);
 
   // lab code
   function lab_init() {
     lab2_photovore_setup();
+  }
+
+  function lab_syncfunc(p, q) {
+    lab2_photovore_syncfunc(p, q);
   }
 
   // LAB 2: PHOTOVORE CODE
@@ -91,6 +92,7 @@ let simulatorCode = function(Ammo) {
   const RIGHT_START = 5;
   const LEFT_END = LEFT_START - NUM_RAYS;
   const RIGHT_END = RIGHT_START - NUM_RAYS;
+  let zBase = new THREE.Vector3(0, 1, 0);
 
   function lab2_photovore_setup() {
     // the light
@@ -146,21 +148,21 @@ let simulatorCode = function(Ammo) {
 
     var leftLightStartingPosn = carPosition.clone();
     var llSPtiltedQuat = new THREE.Quaternion();
-    llSPtiltedQuat.setFromAxisAngle(new THREE.Vector3(0, 1, 0), 45 * Math.PI / 180);
+    llSPtiltedQuat.setFromAxisAngle(zBase, 45 * Math.PI / 180);
     var llSPtiltedVec = vehiclePoint.clone();
     llSPtiltedVec.applyQuaternion(llSPtiltedQuat);
     leftLightStartingPosn.add(llSPtiltedVec);
 
     var rightLightStartingPosn = carPosition.clone();
     var rlSPtiltedQuat = new THREE.Quaternion();
-    rlSPtiltedQuat.setFromAxisAngle(new THREE.Vector3(0, 1, 0), -45 * Math.PI / 180);
+    rlSPtiltedQuat.setFromAxisAngle(zBase, -45 * Math.PI / 180);
     var rlSPtiltedVec = vehiclePoint.clone();
     rlSPtiltedVec.applyQuaternion(rlSPtiltedQuat);
     rightLightStartingPosn.add(rlSPtiltedVec);
 
     var traceRay = function(isLeft, angle) {
       var tiltedQuat = new THREE.Quaternion();
-      tiltedQuat.setFromAxisAngle(new THREE.Vector3(0, 1, 0), angle * Math.PI / 180);
+      tiltedQuat.setFromAxisAngle(zBase, angle * Math.PI / 180);
       var tiltedVec = vehiclePoint.clone();
       tiltedVec.applyQuaternion(tiltedQuat);
       var startingPos = isLeft ? leftLightStartingPosn : rightLightStartingPosn;
@@ -310,12 +312,12 @@ let simulatorCode = function(Ammo) {
     if (this.simPause) return;
     requestAnimationFrame(this.tick.bind(this));
     var dt = clock.getDelta();
+    time += dt;
     for (var i = 0; i < syncList.length; i++)
       syncList[i](dt);
-    physicsWorld.stepSimulation( dt, 10 );
+    physicsWorld.stepSimulation(dt, 10);
     //controls.update( dt );
     renderer.render( scene, camera );
-    time += dt;
     stats.update();
   };
 
@@ -427,84 +429,20 @@ let simulatorCode = function(Ammo) {
 
     speedometer.innerHTML = (speed < 0 ? '(R) ' : '') + Math.abs(speed).toFixed(1) + ' km/h';
 
-    // force *should* be the ratio of power to acceleration.
-    // TODO: do this, blah blah blah (desiredLeftSpeed is a power value, not force)
-    let leftForce = desiredLeftSpeed;
-    let rightForce = desiredRightSpeed;
-
-    // for this lab only, scale down the speed (cap it at 5 km/h)
-    scale = 1 - 0.05*speed*speed;
-    //if (scale < 0) scale = 0;
-
-    if (leftForce == 0) {
-      mainVehicle.setBrake(maxBreakingForce, LEFT_WHEEL);
-    } else {
-      leftForce *= scale;
-    }
-    if (rightForce == 0) {
-      mainVehicle.setBrake(maxBreakingForce, RIGHT_WHEEL);
-    } else {
-      rightForce *= scale;
-    }
-
-    if (lastLeftSpeed > desiredLeftSpeed) {
-      leftBreakAmt = lastLeftSpeed - desiredLeftSpeed;
-      leftBreakCounter = 10;
-    }
-    if (leftBreakCounter) { console.log('applying left break', leftBreakAmt);
-      mainVehicle.applyEngineForce(-leftBreakAmt * 2, LEFT_WHEEL);
-      leftBreakCounter--;
-    } else {
-      mainVehicle.applyEngineForce(leftForce, LEFT_WHEEL);
-    }
-
-    if (lastRightSpeed > desiredRightSpeed) {
-      rightBreakCounter = 10;
-      rightBreakAmt = (lastRightSpeed - desiredRightSpeed);
-    }
-    if (rightBreakCounter) { console.log('applying right break', rightBreakAmt);
-      mainVehicle.applyEngineForce(-rightBreakAmt * 2, RIGHT_WHEEL);
-      rightBreakCounter--;
-    } else {
-      mainVehicle.applyEngineForce(rightForce, RIGHT_WHEEL);
-    }
-
-    lastLeftSpeed = desiredLeftSpeed;
-    lastRightSpeed = desiredRightSpeed;
-
-/*
-    // adjust speed to 0 if we are changing it
-    if (speed > 5 && lastLeftSpeed > desiredLeftSpeed) {
-      leftBreakCounter = 4;
-      leftBreakAmt = (lastLeftSpeed - desiredLeftSpeed);
-    }
-    if (leftBreakCounter) { console.log('applying break', leftBreakAmt);
-      // apply a small braking force
-      mainVehicle.setBrake(leftBreakAmt, LEFT_WHEEL);
-      leftForce *= 0;
-      //rightForce *= 0.5;
-      leftBreakCounter--;
-    } else {
-      mainVehicle.setBrake(0, LEFT_WHEEL);
-    }
-    if (speed > 5 && lastRightSpeed > desiredRightSpeed) {
-      rightBreakCounter = 4;
-      rightBreakAmt = (lastRightSpeed - desiredRightSpeed);
-    }
-    if (rightBreakCounter) { console.log('applying break', rightBreakAmt, maxBreakingForce);
-      // apply a small braking force
-      mainVehicle.setBrake(rightBreakAmt, RIGHT_WHEEL);
-      rightForce *= 0;
-      //leftForce *= 0.5;
-      rightBreakCounter--;
-    } else {
-      mainVehicle.setBrake(0, RIGHT_WHEEL);
-    }
-    lastLeftSpeed = desiredLeftSpeed;
-    lastRightSpeed = desiredRightSpeed;
-*/
-
+    // update the vehicle position
     var tm, p, q, i;
+    tm = mainVehicle.getChassisWorldTransform();
+    p = tm.getOrigin();
+    q = tm.getRotation();
+    vehicleChassisMesh.position.set(p.x(), p.y(), p.z());
+    vehicleChassisMesh.quaternion.set(q.x(), q.y(), q.z(), q.w());
+
+    // direction vehicle points in
+    var localVehiclePoint = new THREE.Vector3(0, 0, 1);
+    localVehiclePoint.applyQuaternion(vehicleChassisMesh.quaternion);
+
+    // update the wheels
+    var newWheelRotations = [];
     var n = mainVehicle.getNumWheels();
     for (i = 0; i < n; i++) {
       mainVehicle.updateWheelTransform(i, true);
@@ -513,16 +451,43 @@ let simulatorCode = function(Ammo) {
       q = tm.getRotation();
       vehicleWheelMeshes[i].position.set(p.x(), p.y(), p.z());
       vehicleWheelMeshes[i].quaternion.set(q.x(), q.y(), q.z(), q.w());
+      // get a vector representing the new wheel's rotation
+      var wheelVector = pointingUp.clone();
+      wheelVector.applyQuaternion(vehicleWheelMeshes[i].quaternion);
+      newWheelRotations[i] = wheelVector.angleTo(localVehiclePoint);
     }
+
+    // do the math for the speed
+    if (!wheelRotations[LEFT_WHEEL] || !wheelRotations[RIGHT_WHEEL]) {
+      // initial case
+      wheelRotations[LEFT_WHEEL] = newWheelRotations[LEFT_WHEEL];
+      wheelRotations[RIGHT_WHEEL] = newWheelRotations[RIGHT_WHEEL];
+    }
+    let deltaAngleLeft = wheelRotations[LEFT_WHEEL] - newWheelRotations[LEFT_WHEEL];
+    let deltaAngleRight = wheelRotations[RIGHT_WHEEL] - newWheelRotations[RIGHT_WHEEL];
+
+    let realMovedLeft = -deltaAngleLeft/dt;
+    let realMovedRight = -deltaAngleRight/dt;
+
+    // the change in angle per time is a rough approximation for the speed :)
+    let speedDifferenceLeft = desiredLeftSpeed - realMovedLeft;
+    mainVehicle.applyEngineForce(speedDifferenceLeft * 300 + desiredLeftSpeed * 100, LEFT_WHEEL);
+    if (desiredLeftSpeed == 0)
+      mainVehicle.setBrake(maxBreakingForce, LEFT_WHEEL);
+    let speedDifferenceRight = desiredRightSpeed - realMovedRight;
+    mainVehicle.applyEngineForce(speedDifferenceRight * 300 + desiredRightSpeed * 100, RIGHT_WHEEL);
+    if (desiredRightSpeed == 0)
+      mainVehicle.setBrake(maxBreakingForce, RIGHT_WHEEL);
+
+    // update wheel rotations
+    wheelRotations = newWheelRotations;
 
     tm = mainVehicle.getChassisWorldTransform();
     p = tm.getOrigin();
     q = tm.getRotation();
-    vehicleChassisMesh.position.set(p.x(), p.y(), p.z());
-    vehicleChassisMesh.quaternion.set(q.x(), q.y(), q.z(), q.w());
 
-    // TODO: lab2-dependent
-    lab2_photovore_syncfunc(p, q);
+    // call lab-dependent sync code 
+    lab_syncfunc(p, q);
   }
 
   function createVehicle(pos, quat) {
@@ -630,7 +595,7 @@ let simulatorCode = function(Ammo) {
   function createObjects() {
     //function createBox(pos, quat, w, l, h, mass, friction) {
     // ground
-    createBox(new THREE.Vector3(0, -0.5, 0), ZERO_QUATERNION, WORLD_MAX, 1, WORLD_MAX, 0, 4.5);
+    createBox(new THREE.Vector3(0, -0.5, 0), ZERO_QUATERNION, WORLD_MAX, 1, WORLD_MAX, 0, 2);
 
     //var quaternion = new THREE.Quaternion(0, 0, 0, 1);
     //quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 18);
@@ -721,11 +686,10 @@ let simulatorCode = function(Ammo) {
     // Motors
     this.Motors = {
       setLeftSpeed: function(speed) {
-        // TODO: TEMPORARY ADJUSTMENT (used to be * 2000)
-        desiredLeftSpeed = speed / 300 * 200;
+        desiredLeftSpeed = speed / 300;
       },
       setRightSpeed: function(speed) {
-        desiredRightSpeed = speed / 300 * 200;
+        desiredRightSpeed = speed / 300;
       }
     };
 
