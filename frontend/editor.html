@@ -156,6 +156,14 @@ let saveTimeout = null;
     }
   });
 
+  document.body.addEventListener('keydown', function(e) {
+    if ((e.keyCode == 83 && e.ctrlKey) || (e.keyCode == 83 && e.metaKey)) {
+      e.preventDefault();
+      return false;
+    }
+    return true;
+  }, false);
+
   // disable simulator
   const urlParams = new URLSearchParams(window.location.search);
   checkSimulatorDisabled(urlParams.has('disableSimulator'));
