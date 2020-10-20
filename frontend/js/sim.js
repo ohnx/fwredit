@@ -76,167 +76,61 @@ let simulatorCode = function(Ammo) {
 
   // lab code
   function lab_init() {
-    lab2_photovore_setup();
+    lab3_control_setup();
   }
 
   function lab_syncfunc(p, q) {
-    lab2_photovore_syncfunc(p, q);
+    lab3_control_syncfunc(p, q);
   }
 
-  // LAB 2: PHOTOVORE CODE
-  var lab2_light;
-  var leftSensorOffset;
-  var rightSensorOffset;
-  const NUM_RAYS = 50;
-  const LEFT_START = 45;
-  const RIGHT_START = 5;
-  const LEFT_END = LEFT_START - NUM_RAYS;
-  const RIGHT_END = RIGHT_START - NUM_RAYS;
-  let zBase = new THREE.Vector3(0, 1, 0);
-
-  function lab2_photovore_setup() {
-    // the light
-    var geometry = new THREE.SphereBufferGeometry(3, 32, 32);
-    var material = new THREE.MeshBasicMaterial({color: 0xffff00});
-    lab2_light = new THREE.Mesh(geometry, material);
-    // store the last used position of the light
-    let lastLightPosn = localStorage.getItem('LIGHT_POSITION');
-    if (lastLightPosn) {
-      lastLightPosn = JSON.parse(lastLightPosn);
-    } else {
-      lastLightPosn = randomizeLightPosn();
+  // LAB 3: CONTROL LAB CODE
+  let trackMesh;
+  const CURRENT_TRACK = 'models/lab3_hard.json';
+  let trackConfigs = {
+    'models/lab3_basic.json': {
+      rotation: [Math.PI/2, 0, Math.PI/2],
+      position: [10, -1.9, -35]
+    },
+    'models/lab3_hard.json': {
+      rotation: [Math.PI/2, 0, Math.PI/2],
+      position: [14, -1.9, -40]
     }
-    lab2_light.position.set(lastLightPosn.xPos, 2, lastLightPosn.zPos);
-    scene.add(lab2_light);
-
-    // the sensors' offsets (as a percentage of the main reading from -15% to 15%)
-    leftSensorOffset = localStorage.getItem('LEFT_SENSOR_OFFSET');
-    if (!leftSensorOffset) {
-      leftSensorOffset = 0.85 + Math.random() * 0.30; // random offset
-      localStorage.setItem('LEFT_SENSOR_OFFSET', leftSensorOffset);
-    }
-    rightSensorOffset = localStorage.getItem('RIGHT_SENSOR_OFFSET');
-    if (!rightSensorOffset) {
-      rightSensorOffset = 0.85 + Math.random() * 0.30; // random offset
-      localStorage.setItem('RIGHT_SENSOR_OFFSET', rightSensorOffset);
-    }
+  };
+  function lab3_control_setup() {
+    // load meshes
+    var loader = new THREE.BufferGeometryLoader();
+    loader.load(CURRENT_TRACK, function(geometry) {
+      geometry = geometry.scale(0.04, 0.04, 0.04);
+      trackMesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({color: '#000'}));
+      trackMesh.rotation.fromArray(trackConfigs[CURRENT_TRACK].rotation);
+      trackMesh.position.fromArray(trackConfigs[CURRENT_TRACK].position);
+      scene.add(trackMesh);
+    });
   }
 
   var debugArrows = new Array();
-  function lab2_photovore_syncfunc(p, q) {
-    // raycast to see if we hit a box
+  function lab3_control_syncfunc(p, q) {
+    // raytrace to the track
     carPosition.set(p.x(), p.y(), p.z());
     forwardsDirection.set(q.x(), q.y(), q.z(), q.w());
-    var vehiclePoint = new THREE.Vector3(0, 0, 1);
+    var vehiclePoint = new THREE.Vector3(0, -1, 0);
     vehiclePoint.applyQuaternion(forwardsDirection);
 
     // DEBUG: show arrows
     if (arrow) scene.remove(arrow);
     arrow = new THREE.ArrowHelper(vehiclePoint, carPosition, 100, 0xff0000);
     scene.add(arrow);
-    if (debugArrows.length > 0) {
-      for (var dAi = 0; dAi < debugArrows.length; dAi++) {
-        scene.remove(debugArrows[dAi]);
+
+    var traceRay = function(xOffset) {
+      raycaster.set(carPosition, vehiclePoint);
+      if (!trackMesh) return;
+      var intersect = raycaster.intersectObject(trackMesh);
+      if (intersect.length > 0) {
+        console.log('intersected');
       }
-      // reset the array
-      debugArrows = [];
     }
 
-    // fancy stuff to raytrace to the light now!
-    var leftSensorValue = 0;
-    var rightSensorValue = 0;
-
-    var leftLightStartingPosn = carPosition.clone();
-    var llSPtiltedQuat = new THREE.Quaternion();
-    llSPtiltedQuat.setFromAxisAngle(zBase, 45 * Math.PI / 180);
-    var llSPtiltedVec = vehiclePoint.clone();
-    llSPtiltedVec.applyQuaternion(llSPtiltedQuat);
-    leftLightStartingPosn.add(llSPtiltedVec);
-
-    var rightLightStartingPosn = carPosition.clone();
-    var rlSPtiltedQuat = new THREE.Quaternion();
-    rlSPtiltedQuat.setFromAxisAngle(zBase, -45 * Math.PI / 180);
-    var rlSPtiltedVec = vehiclePoint.clone();
-    rlSPtiltedVec.applyQuaternion(rlSPtiltedQuat);
-    rightLightStartingPosn.add(rlSPtiltedVec);
-
-    var traceRay = function(isLeft, angle) {
-      var tiltedQuat = new THREE.Quaternion();
-      tiltedQuat.setFromAxisAngle(zBase, angle * Math.PI / 180);
-      var tiltedVec = vehiclePoint.clone();
-      tiltedVec.applyQuaternion(tiltedQuat);
-      var startingPos = isLeft ? leftLightStartingPosn : rightLightStartingPosn;
-
-      // debug - show the rays
-      if (isLeft)
-        debugArrows.push(new THREE.ArrowHelper(tiltedVec, startingPos, 100, 0x3300ff));
-      else
-        debugArrows.push(new THREE.ArrowHelper(tiltedVec, startingPos, 100, 0x00ffff));
-      scene.add(debugArrows[debugArrows.length - 1]);
-
-      // trace the ray
-      raycaster.set(startingPos, tiltedVec);
-      var intersects = raycaster.intersectObjects([lab2_light]);
-      if (intersects.length > 0) {
-        var intersect = intersects[0];
-        // ookayy time to compute the value of the brightness!
-        var baseBrightness = 0;
-        // first off is the distance. max distance is 200, but if we
-        // collide, i still want to show at least a little bit vs. 0.
-        // at some point, we want to have near-1024
-        // for now, let's try the equation 1000000/(x+60)^2
-        // (we want to decay the brightness squared; this seems most realistic)
-        var iDr = intersect.distance + 60;
-        baseBrightness = 5000000/(iDr * iDr);
-        // next, we want to consider the angle at which the ray is cast.
-        // the more "off" it is, the less it should count.
-        // +/- 25 is the midpoint here
-        var offNess = 0;
-        if (isLeft) offNess = angle + 25;
-        else offNess = angle - 25;
-        offNess = Math.abs(offNess);
-        // so the range of offness is [0, 25]... at 0 offness, we want to keep
-        // the value at 1.
-        // for now, let's try the equation 1-0.0002x^2
-        baseBrightness *= (1 - (0.0002 * offNess * offNess));
-        // finally, let's add a bit of noise. readings can vary a little bit sometimes
-        // maybe only 2% noise
-        baseBrightness *= 0.98 + Math.random() * 0.04;
-        // ok! all ready to add this to the value
-        if (isLeft) leftSensorValue += baseBrightness;
-        else rightSensorValue += baseBrightness;
-      }
-    };
-
-    var i = 0;
-    // left side
-    for (i = LEFT_START; i >= LEFT_END; i--) {
-      traceRay(true, i);
-    }
-
-    // right side
-    for (i = RIGHT_START; i >= RIGHT_END; i--) {
-      traceRay(false, i);
-    }
-
-    // factor in the offsets
-    leftSensorValue *= leftSensorOffset;
-    rightSensorValue *= rightSensorOffset;
-
-    // now the brightnesses should be adjusted. float-ize them and cap them
-    leftSensorValue = Math.round(leftSensorValue);
-    if (leftSensorValue < 0) leftSensorValue = 0;
-    if (leftSensorValue > 1023) leftSensorValue = 1023;
-
-    rightSensorValue = Math.round(rightSensorValue);
-    if (rightSensorValue < 0) rightSensorValue = 0;
-    if (rightSensorValue > 1023) rightSensorValue = 1023;
-
-    // ok, now set the results to the analog pins!
-    // 16 = A2 = left sensor
-    pinValues[16] = leftSensorValue;
-    // 14 = A0 = right sensor
-    pinValues[14] = rightSensorValue;
+    traceRay(0);
   }
 
   // - Functions -
@@ -271,7 +165,7 @@ let simulatorCode = function(Ammo) {
     scene.add( dirLight2 );
 
     materialDynamic = new THREE.MeshPhongMaterial( { color:0xfca400 } );
-    materialStatic = new THREE.MeshPhongMaterial( { color:0x999999 } );
+    materialStatic = new THREE.MeshPhongMaterial( { color:0xffffff } );
     materialInteractive = new THREE.MeshPhongMaterial( { color:0xdd0000 } );
 
     // raytracing
