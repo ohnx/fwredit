@@ -75,17 +75,17 @@ let simulatorCode = function(Ammo) {
     'basic': {
       model: 'models/lab3_basic.json',
       rotation: [Math.PI/2, 0, Math.PI/2],
-      position: [10, -1.9, -35]
+      position: [10, -1.9, -15]
     },
     'checkoff': {
       model: 'models/lab3_checkoff.json',
       rotation: [Math.PI/2, 0, Math.PI/2],
-      position: [14, -1.9, -40]
+      position: [14, -1.9, -20]
     },
     'hard': {
       model: 'models/lab3_hard.json',
       rotation: [Math.PI/2, 0, Math.PI/2],
-      position: [14, -1.9, -40]
+      position: [14, -1.9, -20]
     }
   };
   function lab3_load_track_config() {
@@ -193,9 +193,9 @@ let simulatorCode = function(Ammo) {
     scene = new THREE.Scene();
 
     camera = new THREE.PerspectiveCamera( 60, container.offsetWidth / container.offsetHeight, 0.2, 2000 );
-    camera.position.x = -10;
-    camera.position.y = 10;
-    camera.position.z = -30;
+    camera.position.x = -5;
+    camera.position.y = 40;
+    camera.position.z = -10;
     camera.lookAt(new THREE.Vector3(0, 0, 0));
 
     renderer = new THREE.WebGLRenderer({antialias:true});
@@ -554,7 +554,7 @@ let simulatorCode = function(Ammo) {
     //  for (var i = 0; i < nh; i++)
     //    createBox(new THREE.Vector3(size * j - (size * (nw - 1)) / 2, size * i, 10), ZERO_QUATERNION, size, size, size, 10);
 
-    createVehicle(new THREE.Vector3(0, 1, -20), ZERO_QUATERNION);
+    createVehicle(new THREE.Vector3(0, 1, 0), ZERO_QUATERNION);
 
     // call lab code
     lab_init();
