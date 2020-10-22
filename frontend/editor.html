@@ -85,7 +85,6 @@
         <a onclick="compileCode()">Compile</a>
         <a onclick="compileCode(reloadSimulator)">Compile and Run</a>
         <a id="simPauser" onclick="pauseSimulator()">Stop Simulator</a>
-        <a id="compMode" onclick="switchFrame()">Competition</a>
         <input id="fileSelector" type="file">
     </div>
 <div id="editor">
@@ -243,23 +242,6 @@ function checkSimulatorDisabled(overrideDisableSim) {
     document.getElementById('simulator').src = 'simulator.html';
   } else {
     document.getElementById('simulator').srcdoc = '<html><body><h1>Simulator disabled.</h1></body></html>';
-  }
-}
-
-function switchFrame() {
-  // skip switch frame if simulator disabled
-  if (document.getElementById('simulator').srcdoc) return;
-
-  // check current mode
-  let compMode = document.getElementById('compMode');
-  if (compMode.innerHTML.indexOf('Competition') >= 0) {
-    // currently in testing mode, switch to competition
-    document.getElementById('simulator').src = 'competition.html';
-    compMode.innerHTML = 'Return to lab';
-  } else {
-    // currently in competition mode, switch to testing mode
-    document.getElementById('simulator').src = 'simulator.html';
-    compMode.innerHTML = 'Competition!';
   }
 }
 
