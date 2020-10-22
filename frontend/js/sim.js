@@ -7,20 +7,6 @@ const WORLD_MAX = 200;
 // number of pins
 const NUM_PINS = 20;
 
-let randomizeLightPosn = function() {
-  let newLightPosn = {xPos: 0, zPos: 0};
-
-  var xSgn = Math.random() > 0.5;
-  var xPos = Math.random() * (WORLD_MAX/2 - 50) + 40;
-  newLightPosn.xPos = xSgn ? xPos : -xPos;
-  var zSgn = Math.random() > 0.5;
-  var zPos = Math.random() * (WORLD_MAX/2 - 50) + 40;
-  newLightPosn.zPos = zSgn ? zPos : -zPos;
-
-  localStorage.setItem('LIGHT_POSITION', JSON.stringify(newLightPosn));
-  return newLightPosn;
-};
-
 let simulatorCode = function(Ammo) {
   // - Global variables -
   var DISABLE_DEACTIVATION = 4;
@@ -85,52 +71,118 @@ let simulatorCode = function(Ammo) {
 
   // LAB 3: CONTROL LAB CODE
   let trackMesh;
-  const CURRENT_TRACK = 'models/lab3_hard.json';
   let trackConfigs = {
-    'models/lab3_basic.json': {
+    'basic': {
+      model: 'models/lab3_basic.json',
       rotation: [Math.PI/2, 0, Math.PI/2],
       position: [10, -1.9, -35]
     },
-    'models/lab3_hard.json': {
+    'checkoff': {
+      model: 'models/lab3_checkoff.json',
+      rotation: [Math.PI/2, 0, Math.PI/2],
+      position: [14, -1.9, -40]
+    },
+    'hard': {
+      model: 'models/lab3_hard.json',
       rotation: [Math.PI/2, 0, Math.PI/2],
       position: [14, -1.9, -40]
     }
   };
+  function lab3_load_track_config() {
+    const DEFAULT_TRACK = 'basic';
+    let currTrack = localStorage.getItem('CURRENT_TRACK');
+    console.log('loaded track', currTrack);
+    if (!currTrack) currTrack = DEFAULT_TRACK;
+    document.getElementById('selectTrack').value = currTrack;
+    document.getElementById('selectTrack').addEventListener('change', function() {
+      localStorage.setItem('CURRENT_TRACK', document.getElementById('selectTrack').value);
+      window.location.reload(false);
+    });
+    return currTrack;
+  }
   function lab3_control_setup() {
     // load meshes
+    let currTrack = lab3_load_track_config();
     var loader = new THREE.BufferGeometryLoader();
-    loader.load(CURRENT_TRACK, function(geometry) {
+    loader.load(trackConfigs[currTrack].model, function(geometry) {
       geometry = geometry.scale(0.04, 0.04, 0.04);
       trackMesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({color: '#000'}));
-      trackMesh.rotation.fromArray(trackConfigs[CURRENT_TRACK].rotation);
-      trackMesh.position.fromArray(trackConfigs[CURRENT_TRACK].position);
+      trackMesh.rotation.fromArray(trackConfigs[currTrack].rotation);
+      trackMesh.position.fromArray(trackConfigs[currTrack].position);
       scene.add(trackMesh);
     });
   }
 
   var debugArrows = new Array();
+  let zBase = new THREE.Vector3(0, 1, 0);
+  const EMITTERS_BASE = 5;
   function lab3_control_syncfunc(p, q) {
     // raytrace to the track
     carPosition.set(p.x(), p.y(), p.z());
     forwardsDirection.set(q.x(), q.y(), q.z(), q.w());
-    var vehiclePoint = new THREE.Vector3(0, -1, 0);
-    vehiclePoint.applyQuaternion(forwardsDirection);
 
     // DEBUG: show arrows
-    if (arrow) scene.remove(arrow);
-    arrow = new THREE.ArrowHelper(vehiclePoint, carPosition, 100, 0xff0000);
-    scene.add(arrow);
-
-    var traceRay = function(xOffset) {
-      raycaster.set(carPosition, vehiclePoint);
-      if (!trackMesh) return;
-      var intersect = raycaster.intersectObject(trackMesh);
-      if (intersect.length > 0) {
-        console.log('intersected');
+    if (debugArrows.length > 0) {
+      for (var dAi = 0; dAi < debugArrows.length; dAi++) {
+        scene.remove(debugArrows[dAi]);
       }
+      // reset the array
+      debugArrows = [];
     }
 
-    traceRay(0);
+    // generate the direction that will point down
+    var facingDown = new THREE.Vector3(0, -1, 0);
+    facingDown.applyQuaternion(forwardsDirection);
+
+    // generate the forwards vector
+    var facingFowards = new THREE.Vector3(0, 0, 1);
+    facingFowards.applyQuaternion(forwardsDirection);
+    var forwardsDirectionQuat = new THREE.Quaternion();
+    forwardsDirectionQuat.setFromAxisAngle(zBase, 0 * Math.PI / 180);
+
+    // this amount is the same for every vector
+    var forwardsVec = facingFowards.clone();
+    forwardsVec.applyQuaternion(forwardsDirectionQuat);
+    
+    // generate the left/right vector - this vector is the one that changes
+    // to model the line reading sensor
+    var tiltLeftQuat = new THREE.Quaternion();
+    tiltLeftQuat.setFromAxisAngle(zBase, 90 * Math.PI / 180);
+    var lrVec = facingFowards.clone();
+    lrVec.applyQuaternion(tiltLeftQuat);
+
+    let raytracedArrows = [];
+    let lrScales = [0.9, 0.6, 0.3, 0, -0.3, -0.6, -0.9];
+    // i would do this one, but it seems like my computer suffers a big
+    // perf hit :<
+    //let lrScales = [0.9, 0.7, 0.5, 0.3, 0.1, -0.1, -0.3, -0.5, -0.7, -0.9];
+    for (var i = 0; i < lrScales.length; i++) {
+      let currentRay = carPosition.clone();
+      
+      // all rays go forwards the same amount
+      currentRay.add(forwardsVec);
+      
+      // not all rays go l/r the same
+      currentRay.addScaledVector(lrVec, lrScales[i]);
+
+      // DEBUG: show arrows
+      debugArrows.push(new THREE.ArrowHelper(facingDown, currentRay, 100, 0x00ffff));
+      scene.add(debugArrows[debugArrows.length - 1]);
+
+      // add the raytracedArrows
+      raytracedArrows.push(currentRay);
+    }
+
+    var traceRay = function(arrowVec) {
+      raycaster.set(arrowVec, facingDown);
+      if (!trackMesh) return false;
+      var intersect = raycaster.intersectObject(trackMesh);
+      return intersect.length > 0;
+    };
+
+    for (var i = 0; i < raytracedArrows.length; i++) {
+      pinValues[i + EMITTERS_BASE] = traceRay(raytracedArrows[i]) ? 1023 : 0;
+    }
   }
 
   // - Functions -
@@ -536,11 +588,6 @@ let simulatorCode = function(Ammo) {
   this.pause = function() {
     this.simPause = true;
   };
-
-  document.getElementById('btnRandomizeLightPos').addEventListener('click', function(e) {
-      randomizeLightPosn();
-      window.location.reload(false);
-  });
 
   document.getElementById('btnA').addEventListener('click', function(e) {
     if (!buttons[0]) {

@@ -89,12 +89,18 @@ class QTRSensors
     /// \brief Specifies that the sensors are RC.
     ///
     /// Call this function to set up RC-type sensors.
-    void setTypeRC();
+    void setTypeRC() {
+      _type = QTRType::RC;
+      _maxValue = 1023;
+    }
 
     /// \brief Specifies that the sensor type is analog.
     ///
     /// Call this function to set up A-type sensors.
-    void setTypeAnalog();
+    void setTypeAnalog() {
+      _type = QTRType::Analog;
+      _maxValue = 1023;
+    }
 
     /// \brief Returns the type of the sensors.
     ///
@@ -129,7 +135,10 @@ class QTRSensors
     /// values to be reallocated and reinitialized the next time calibrate() is
     /// called (it sets `calibrationOn.initialized` and
     /// `calibrationOff.initialized` to false).
-    void setSensorPins(const uint8_t * pins, uint8_t sensorCount);
+    void setSensorPins(const uint8_t * pins, uint8_t sensorCount) {
+      _sensorPins = pins;
+      _sensorCount = sensorCount;
+    }
 
     /// \brief Sets the timeout for RC sensors.
     ///
@@ -149,7 +158,9 @@ class QTRSensors
     /// QTRReadMode::OnAndOff or QTRReadMode::OddEvenAndOff).
     ///
     /// The timeout setting only applies to RC sensors.
-    void setTimeout(uint16_t timeout);
+    void setTimeout(uint16_t timeout) {
+      _timeout = timeout;
+    }
 
     /// \brief Returns the timeout for RC sensors.
     ///
@@ -196,7 +207,10 @@ class QTRSensors
     /// If you call this function after an emitter pin/pins have already been
     /// specified, any existing emitter pins will be released; see also
     /// releaseEmitterPins().
-    void setEmitterPin(uint8_t emitterPin);
+    void setEmitterPin(uint8_t emitterPin) {
+      _emitterPinCount = 1;
+      _oddEmitterPin = emitterPin;
+    }
 
     /// \brief Sets separate odd and even emitter control pins for the sensors.
     ///
@@ -393,7 +407,7 @@ class QTRSensors
     /// arrays that hold the off values will not be allocated (and vice versa).
     ///
     /// See \ref md_usage for more information and example code.
-    void calibrate(QTRReadMode mode = QTRReadMode::On);
+    void calibrate(QTRReadMode mode = QTRReadMode::On) { return; }
 
     /// \brief Resets all calibration that has been done.
     void resetCalibration();
@@ -555,9 +569,47 @@ class QTRSensors
     // initializing the storage for the calibration values if necessary.
     void calibrateOnOrOff(CalibrationData & calibration, QTRReadMode mode);
 
-    void readPrivate(uint16_t * sensorValues, uint8_t start = 0, uint8_t step = 1);
+    void readPrivate(uint16_t * sensorValues, uint8_t start = 0, uint8_t step = 1) {
+      for (uint8_t i = 0; i < _sensorCount; i++) {
+        // sim.js sets values to 0 or 1023, we want to return either 0 or 1000
+        sensorValues[i] = cc_analogRead(_sensorPins)[i] == 1023 ? 1000 : 0;
+      }
+    }
 
-    uint16_t readLinePrivate(uint16_t * sensorValues, QTRReadMode mode, bool invertReadings);
+    uint16_t readLinePrivate(uint16_t * sensorValues, QTRReadMode mode, bool invertReadings) {
+      bool onLine = false;
+      uint32_t avg = 0; // this is for the weighted total
+      uint16_t sum = 0; // this is for the denominator, which is <= 64000
+
+      // read the sensor values
+      readPrivate(sensorValues);
+
+      for (uint8_t i = 0; i < _sensorCount; i++) {
+        uint16_t value = sensorValues[i];
+        if (invertReadings) { value = 1000 - value; }
+
+        // keep track of whether we see the line at all
+        if (value > 200) { onLine = true; }
+
+        // average in values
+        avg += (uint32_t)value * (i * 1000);
+        sum += value;
+      }
+
+      if (!onLine) { // not currently on the line
+        // If it last read to the left of center, return 0.
+        if (_lastPosition < (_sensorCount - 1) * 1000 / 2) {
+          return 0;
+        } else {
+          // If it last read to the right of center, return the max.
+          return (_sensorCount - 1) * 1000;
+        }
+      }
+
+      // compute and return the last position
+      _lastPosition = avg / sum;
+      return _lastPosition;
+    }
 
     QTRType _type = QTRType::Undefined;
 
