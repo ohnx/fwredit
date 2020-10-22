@@ -3,6 +3,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <Romi32U4.h>
 
 /// \brief Emitter behavior when taking readings.
 ///
@@ -136,7 +137,9 @@ class QTRSensors
     /// called (it sets `calibrationOn.initialized` and
     /// `calibrationOff.initialized` to false).
     void setSensorPins(const uint8_t * pins, uint8_t sensorCount) {
-      _sensorPins = pins;
+      free(_sensorPins);
+      _sensorPins = malloc(sizeof(uint8_t) * sensorCount);
+      if (_sensorPins) memcpy(_sensorPins, pins, sizeof(uint8_t) * sensorCount);
       _sensorCount = sensorCount;
     }
 
@@ -502,7 +505,7 @@ class QTRSensors
     /// readLineWhite().
     ///
     /// See \ref md_usage for more information and example code.
-    uint16_t readLineBlack(uint16_t * sensorValues, QTRReadMode mode = QTRReadMode::On)
+    int readLineBlack(unsigned int *sensorValues, QTRReadMode mode = QTRReadMode::On)
     {
       return readLinePrivate(sensorValues, mode, false);
     }
@@ -525,7 +528,7 @@ class QTRSensors
     /// readLineBlack().
     ///
     /// See \ref md_usage for more information and example code.
-    uint16_t readLineWhite(uint16_t * sensorValues, QTRReadMode mode = QTRReadMode::On)
+    int readLineWhite(unsigned int *sensorValues, QTRReadMode mode = QTRReadMode::On)
     {
       return readLinePrivate(sensorValues, mode, true);
     }
@@ -569,17 +572,17 @@ class QTRSensors
     // initializing the storage for the calibration values if necessary.
     void calibrateOnOrOff(CalibrationData & calibration, QTRReadMode mode);
 
-    void readPrivate(uint16_t * sensorValues, uint8_t start = 0, uint8_t step = 1) {
+    void readPrivate(unsigned int *sensorValues, uint8_t start = 0, uint8_t step = 1) {
       for (uint8_t i = 0; i < _sensorCount; i++) {
         // sim.js sets values to 0 or 1023, we want to return either 0 or 1000
-        sensorValues[i] = cc_analogRead(_sensorPins)[i] == 1023 ? 1000 : 0;
+        sensorValues[i] = analogRead(_sensorPins)[i] == 1023 ? 1000 : 0;
       }
     }
 
-    uint16_t readLinePrivate(uint16_t * sensorValues, QTRReadMode mode, bool invertReadings) {
+    int readLinePrivate(unsigned int *sensorValues, QTRReadMode mode, bool invertReadings) {
       bool onLine = false;
-      uint32_t avg = 0; // this is for the weighted total
-      uint16_t sum = 0; // this is for the denominator, which is <= 64000
+      int avg = 0; // this is for the weighted total
+      int sum = 0; // this is for the denominator, which is <= 64000
 
       // read the sensor values
       readPrivate(sensorValues);
