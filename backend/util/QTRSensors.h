@@ -85,7 +85,7 @@ class QTRSensors
 
     QTRSensors() = default;
 
-    ~QTRSensors();
+    ~QTRSensors() = default;
 
     /// \brief Specifies that the sensors are RC.
     ///
