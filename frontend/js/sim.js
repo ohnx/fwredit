@@ -57,6 +57,12 @@ let simulatorCode = function(Ammo) {
   // car control variables
   var desiredLeftSpeed = 0;
   var desiredRightSpeed = 0;
+  var lastLeftSpeed = 0;
+  var lastRightSpeed = 0;
+  var leftBreakCounter = 0;
+  var rightBreakCounter = 0;
+  var leftBreakAmt = 0;
+  var rightBreakAmt = 0;
 
   var pointingUp = new THREE.Vector3(0, 1, 0);
 
@@ -75,17 +81,17 @@ let simulatorCode = function(Ammo) {
     'basic': {
       model: 'models/lab3_basic.json',
       rotation: [Math.PI/2, 0, Math.PI/2],
-      position: [10, -1.9, -15]
+      position: [13, -0.9, -12]
     },
     'checkoff': {
       model: 'models/lab3_checkoff.json',
       rotation: [Math.PI/2, 0, Math.PI/2],
-      position: [14, -1.9, -20]
+      position: [7, -0.9, -10]
     },
     'hard': {
       model: 'models/lab3_hard.json',
       rotation: [Math.PI/2, 0, Math.PI/2],
-      position: [14, -1.9, -20]
+      position: [7, -0.9, -10]
     }
   };
   function lab3_load_track_config() {
@@ -105,7 +111,7 @@ let simulatorCode = function(Ammo) {
     let currTrack = lab3_load_track_config();
     var loader = new THREE.BufferGeometryLoader();
     loader.load(trackConfigs[currTrack].model, function(geometry) {
-      geometry = geometry.scale(0.04, 0.04, 0.04);
+      geometry = geometry.scale(0.02, 0.02, 0.02);
       trackMesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({color: '#000'}));
       trackMesh.rotation.fromArray(trackConfigs[currTrack].rotation);
       trackMesh.position.fromArray(trackConfigs[currTrack].position);
@@ -407,15 +413,45 @@ let simulatorCode = function(Ammo) {
     let leftForce = desiredLeftSpeed;
     let rightForce = desiredRightSpeed;
 
-    mainVehicle.applyEngineForce(leftForce, LEFT_WHEEL);
-    mainVehicle.applyEngineForce(rightForce, RIGHT_WHEEL);
+    // for this lab only, scale down the speed (cap it at 5 km/h)
+    scale = 1 - 0.05*speed*speed;
+    //if (scale < 0) scale = 0;
 
     if (leftForce == 0) {
       mainVehicle.setBrake(maxBreakingForce, LEFT_WHEEL);
+    } else {
+      leftForce *= scale;
     }
     if (rightForce == 0) {
       mainVehicle.setBrake(maxBreakingForce, RIGHT_WHEEL);
+    } else {
+      rightForce *= scale;
     }
+
+    if (lastLeftSpeed > desiredLeftSpeed) {
+      leftBreakAmt = lastLeftSpeed - desiredLeftSpeed;
+      leftBreakCounter = 10;
+    }
+    if (leftBreakCounter) { console.log('applying left break', leftBreakAmt);
+      mainVehicle.applyEngineForce(-leftBreakAmt * 2, LEFT_WHEEL);
+      leftBreakCounter--;
+    } else {
+      mainVehicle.applyEngineForce(leftForce, LEFT_WHEEL);
+    }
+
+    if (lastRightSpeed > desiredRightSpeed) {
+      rightBreakCounter = 10;
+      rightBreakAmt = (lastRightSpeed - desiredRightSpeed);
+    }
+    if (rightBreakCounter) { console.log('applying right break', rightBreakAmt);
+      mainVehicle.applyEngineForce(-rightBreakAmt * 2, RIGHT_WHEEL);
+      rightBreakCounter--;
+    } else {
+      mainVehicle.applyEngineForce(rightForce, RIGHT_WHEEL);
+    }
+
+    lastLeftSpeed = desiredLeftSpeed;
+    lastRightSpeed = desiredRightSpeed;
 
     // update wheel rotations
     wheelRotations = newWheelRotations;
@@ -518,7 +554,7 @@ let simulatorCode = function(Ammo) {
       wheelInfo.set_m_suspensionStiffness(suspensionStiffness);
       wheelInfo.set_m_wheelsDampingRelaxation(suspensionDamping);
       wheelInfo.set_m_wheelsDampingCompression(suspensionCompression);
-      wheelInfo.set_m_frictionSlip(friction);
+      wheelInfo.set_m_frictionSlip(friction*100);
       wheelInfo.set_m_rollInfluence(rollInfluence);
 
       vehicleWheelMeshes[index] = createWheelMesh(radius, width);
@@ -533,7 +569,7 @@ let simulatorCode = function(Ammo) {
   function createObjects() {
     //function createBox(pos, quat, w, l, h, mass, friction) {
     // ground
-    createBox(new THREE.Vector3(0, -0.5, 0), ZERO_QUATERNION, WORLD_MAX, 1, WORLD_MAX, 0, 2);
+    createBox(new THREE.Vector3(0, -0.5, 0), ZERO_QUATERNION, WORLD_MAX, 1, WORLD_MAX, 0, 3);
 
     //var quaternion = new THREE.Quaternion(0, 0, 0, 1);
     //quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 18);
@@ -619,10 +655,10 @@ let simulatorCode = function(Ammo) {
     // Motors
     this.Motors = {
       setLeftSpeed: function(speed) {
-        desiredLeftSpeed = speed / 300;
+        desiredLeftSpeed = speed / 300 * 2000;
       },
       setRightSpeed: function(speed) {
-        desiredRightSpeed = speed / 300;
+        desiredRightSpeed = speed / 300 * 2000;
       }
     };
 
