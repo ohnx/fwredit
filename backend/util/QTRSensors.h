@@ -136,10 +136,8 @@ class QTRSensors
     /// values to be reallocated and reinitialized the next time calibrate() is
     /// called (it sets `calibrationOn.initialized` and
     /// `calibrationOff.initialized` to false).
-    void setSensorPins(const uint8_t * pins, uint8_t sensorCount) {
-      free(_sensorPins);
-      _sensorPins = malloc(sizeof(uint8_t) * sensorCount);
-      if (_sensorPins) memcpy(_sensorPins, pins, sizeof(uint8_t) * sensorCount);
+    void setSensorPins(uint8_t *pins, uint8_t sensorCount) {
+      _sensorPins = pins;
       _sensorCount = sensorCount;
     }
 
@@ -575,7 +573,7 @@ class QTRSensors
     void readPrivate(unsigned int *sensorValues, uint8_t start = 0, uint8_t step = 1) {
       for (uint8_t i = 0; i < _sensorCount; i++) {
         // sim.js sets values to 0 or 1023, we want to return either 0 or 1000
-        sensorValues[i] = analogRead(_sensorPins)[i] == 1023 ? 1000 : 0;
+        sensorValues[i] = analogRead(_sensorPins[i]) == 1023 ? 1000 : 0;
       }
     }
 
