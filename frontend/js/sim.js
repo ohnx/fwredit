@@ -404,26 +404,18 @@ let simulatorCode = function(Ammo) {
     }
 
     // do the math for the speed
-    if (!wheelRotations[LEFT_WHEEL] || !wheelRotations[RIGHT_WHEEL]) {
-      // initial case
-      wheelRotations[LEFT_WHEEL] = newWheelRotations[LEFT_WHEEL];
-      wheelRotations[RIGHT_WHEEL] = newWheelRotations[RIGHT_WHEEL];
-    }
-    let deltaAngleLeft = wheelRotations[LEFT_WHEEL] - newWheelRotations[LEFT_WHEEL];
-    let deltaAngleRight = wheelRotations[RIGHT_WHEEL] - newWheelRotations[RIGHT_WHEEL];
+    let leftForce = desiredLeftSpeed;
+    let rightForce = desiredRightSpeed;
 
-    let realMovedLeft = -deltaAngleLeft/dt;
-    let realMovedRight = -deltaAngleRight/dt;
+    mainVehicle.applyEngineForce(leftForce, LEFT_WHEEL);
+    mainVehicle.applyEngineForce(rightForce, RIGHT_WHEEL);
 
-    // the change in angle per time is a rough approximation for the speed :)
-    let speedDifferenceLeft = desiredLeftSpeed - realMovedLeft;
-    mainVehicle.applyEngineForce(speedDifferenceLeft * 300 + desiredLeftSpeed * 100, LEFT_WHEEL);
-    if (desiredLeftSpeed == 0)
+    if (leftForce == 0) {
       mainVehicle.setBrake(maxBreakingForce, LEFT_WHEEL);
-    let speedDifferenceRight = desiredRightSpeed - realMovedRight;
-    mainVehicle.applyEngineForce(speedDifferenceRight * 300 + desiredRightSpeed * 100, RIGHT_WHEEL);
-    if (desiredRightSpeed == 0)
+    }
+    if (rightForce == 0) {
       mainVehicle.setBrake(maxBreakingForce, RIGHT_WHEEL);
+    }
 
     // update wheel rotations
     wheelRotations = newWheelRotations;
