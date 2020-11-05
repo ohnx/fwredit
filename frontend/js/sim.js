@@ -120,6 +120,7 @@ let simulatorCode = function(Ammo) {
   }
 
   var debugArrows = new Array();
+  var lastRobotState = false;
   let zBase = new THREE.Vector3(0, 1, 0);
   const EMITTERS_BASE = 5;
   function lab3_control_syncfunc(p, q) {
@@ -186,8 +187,19 @@ let simulatorCode = function(Ammo) {
       return intersect.length > 0;
     };
 
+    var total = 0;
     for (var i = 0; i < raytracedArrows.length; i++) {
       pinValues[i + EMITTERS_BASE] = traceRay(raytracedArrows[i]) ? 1023 : 0;
+      total += pinValues[i + EMITTERS_BASE];
+    }
+
+    if (total == 0) {
+      if (lastRobotState == true) {
+        console.warn("ROBOT LEFT TRACK");
+      }
+      lastRobotState = false;
+    } else {
+      lastRobotState = true;
     }
   }
 
@@ -275,9 +287,6 @@ let simulatorCode = function(Ammo) {
 
   function keyup(e) {
     if (this.simPause) return;
-    if (e.keyCode == 81) {
-      console.log(mainVehicle.getSteeringValue(0), mainVehicle.getSteeringValue(1));
-    }
     /*if (e.keyCode == 81) { // 'q', aka "move camera to robot"
     //     createVehicle(new THREE.Vector3(0, 1, -20), ZERO_QUATERNION);
     // camera.position.x = -10;
@@ -432,7 +441,7 @@ let simulatorCode = function(Ammo) {
       leftBreakAmt = lastLeftSpeed - desiredLeftSpeed;
       leftBreakCounter = 10;
     }
-    if (leftBreakCounter) { console.log('applying left break', leftBreakAmt);
+    if (leftBreakCounter) {
       mainVehicle.applyEngineForce(-leftBreakAmt * 2, LEFT_WHEEL);
       leftBreakCounter--;
     } else {
@@ -443,7 +452,7 @@ let simulatorCode = function(Ammo) {
       rightBreakCounter = 10;
       rightBreakAmt = (lastRightSpeed - desiredRightSpeed);
     }
-    if (rightBreakCounter) { console.log('applying right break', rightBreakAmt);
+    if (rightBreakCounter) {
       mainVehicle.applyEngineForce(-rightBreakAmt * 2, RIGHT_WHEEL);
       rightBreakCounter--;
     } else {
