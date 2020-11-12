@@ -81,17 +81,32 @@ let simulatorCode = function(Ammo) {
     'basic': {
       model: 'models/lab3_basic.json',
       rotation: [Math.PI/2, 0, Math.PI/2],
-      position: [13, -0.9, -12]
+      position: [13, -0.9, -12],
+      scale: 0.02
     },
     'checkoff': {
       model: 'models/lab3_checkoff.json',
       rotation: [Math.PI/2, 0, Math.PI/2],
-      position: [7, -0.9, -10]
+      position: [7, -0.9, -10],
+      scale: 0.02
     },
     'hard': {
       model: 'models/lab3_hard.json',
       rotation: [Math.PI/2, 0, Math.PI/2],
-      position: [7, -0.9, -10]
+      position: [7, -0.9, -10],
+      scale: 0.02
+    },
+    'maze1': {
+      model: 'models/lab4_maze_starter.json',
+      rotation: [Math.PI/2, 0, 0],
+      position: [-16.5, -2, 0],
+      scale: 0.9
+    },
+    'maze2': {
+      model: 'models/lab4_maze_harder.json',
+      rotation: [Math.PI/2, 0, 0],
+      position: [-21, -2, 0],
+      scale: 0.9
     }
   };
   function lab3_load_track_config() {
@@ -111,7 +126,7 @@ let simulatorCode = function(Ammo) {
     let currTrack = lab3_load_track_config();
     var loader = new THREE.BufferGeometryLoader();
     loader.load(trackConfigs[currTrack].model, function(geometry) {
-      geometry = geometry.scale(0.02, 0.02, 0.02);
+      geometry = geometry.scale(trackConfigs[currTrack].scale, trackConfigs[currTrack].scale, trackConfigs[currTrack].scale);
       trackMesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({color: '#000'}));
       trackMesh.rotation.fromArray(trackConfigs[currTrack].rotation);
       trackMesh.position.fromArray(trackConfigs[currTrack].position);
