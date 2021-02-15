@@ -16,6 +16,8 @@ let simulatorCode = function(Ammo) {
   this.lastSimulationCode = null;
   var serialCallback;
 
+  var current_lab = document.getElementById('lab').value;
+
   // Graphics variables
   var container, stats, speedometer;
   var camera, controls, scene, renderer;
@@ -67,12 +69,25 @@ let simulatorCode = function(Ammo) {
   var pointingUp = new THREE.Vector3(0, 1, 0);
 
   // lab code
-  function lab_init() {
-    lab3_control_setup();
+  let lab_init = function(){};
+  let lab_syncfunc = function(){};
+
+  if (current_lab == 'lab1') {
+    lab_init = lab1_square_setup;
+  } else if (current_lab == 'lab3') {
+    lab_init = lab3_control_setup;
+    lab_syncfunc = lab3_control_syncfunc;
+    document.getElementById('track-ct').style.display = 'inline-block';
   }
 
-  function lab_syncfunc(p, q) {
-    lab3_control_syncfunc(p, q);
+  // LAB 1: SQUARE LAB
+  function lab1_square_setup() {
+    var size = .75;
+    var nw = 8;
+    var nh = 6;
+    for (var j = 0; j < nw; j++)
+      for (var i = 0; i < nh; i++)
+        createBox(new THREE.Vector3(size * j - (size * (nw - 1)) / 2, size * i, 10), ZERO_QUATERNION, size, size, size, 10);
   }
 
   // LAB 3: CONTROL LAB CODE
@@ -595,6 +610,11 @@ let simulatorCode = function(Ammo) {
     // ground
     createBox(new THREE.Vector3(0, -0.5, 0), ZERO_QUATERNION, WORLD_MAX, 1, WORLD_MAX, 0, 3);
 
+    // grid
+    const gridHelper = new THREE.GridHelper(WORLD_MAX, WORLD_MAX/5);
+    scene.add(gridHelper);
+    gridHelper.position.y += 0.1;
+
     //var quaternion = new THREE.Quaternion(0, 0, 0, 1);
     //quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 18);
     //createBox(new THREE.Vector3(0, -1.5, 0), quaternion, 8, 4, 10, 0);
@@ -759,6 +779,15 @@ let Simulator;
 let SimulatorAPI;
 
 Ammo().then(function(Ammo) {
+  let lab = localStorage.getItem('CURR_LAB');
+  if (lab) document.getElementById('lab').value = lab;
+
+  document.getElementById('lab').addEventListener('change', function() {
+    localStorage.setItem('CURR_LAB', document.getElementById('lab').value);
+    window.location.reload();
+  });
+
+
   Simulator = new simulatorCode(Ammo);
   window.Simulator = Simulator;
   SimulatorAPI = Simulator.API;
@@ -809,4 +838,5 @@ var defaultModule = {
 
 var Module = Object.assign({}, defaultModule);
 
-
+(function() {
+})();
