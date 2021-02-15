@@ -99,6 +99,10 @@
   <body>
     <!-- simulator side -->
     <div id="controls">
+      <select id="lab">
+        <option value="lab1">Square Lab</option>
+        <option value="lab3">Control Lab</option>
+      </select>
       LEDs:
       <div id="ledA" class="circle">R</div>
       <div id="ledB" class="circle">Y</div>
@@ -108,7 +112,7 @@
       <div id="btnA" class="circle btn">A</div>
       <div id="btnB" class="circle btn">B</div>
       <div id="btnC" class="circle btn">C</div>
-      &nbsp; &nbsp; &nbsp;
+      <div id="track-ct" style="display: none;">&nbsp; &nbsp; &nbsp;
       Track:
       <select id="selectTrack">
         <option value="basic">Starter</option>
@@ -116,7 +120,7 @@
         <option value="hard">Challenge</option>
         <option value="maze1">Maze #1</option>
         <option value="maze2">Maze #2</option>
-      </select>
+      </select></div>
     </div>
     <div id="container">
         <h1>Loading simulator...</h1>
