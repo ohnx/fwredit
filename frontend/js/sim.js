@@ -595,6 +595,11 @@ let simulatorCode = function(Ammo) {
     // ground
     createBox(new THREE.Vector3(0, -0.5, 0), ZERO_QUATERNION, WORLD_MAX, 1, WORLD_MAX, 0, 3);
 
+    // grid
+    const gridHelper = new THREE.GridHelper(WORLD_MAX, WORLD_MAX/5);
+    scene.add(gridHelper);
+    gridHelper.position.y += 0.1;
+
     //var quaternion = new THREE.Quaternion(0, 0, 0, 1);
     //quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 18);
     //createBox(new THREE.Vector3(0, -1.5, 0), quaternion, 8, 4, 10, 0);
