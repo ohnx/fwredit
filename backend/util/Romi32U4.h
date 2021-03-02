@@ -266,14 +266,14 @@ class Romi32U4Motors
      *   If false, turns turbo mode off. */
     void allowTurbo(bool turbo) {
         if (turbo) {
-            maxSpeed = 400;
+            maxSpeed = 900;
         } else {
-            maxSpeed = 300;
+            maxSpeed = 1000;
         }
     }
 
   private:
-    int16_t maxSpeed = 300;
+    int16_t maxSpeed = 1000;
     bool flipLeft = false;
     bool flipRight = false;
 };

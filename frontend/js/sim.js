@@ -452,8 +452,8 @@ let simulatorCode = function(Ammo) {
     let leftForce = desiredLeftSpeed;
     let rightForce = desiredRightSpeed;
 
-    // for this lab only, scale down the speed (cap it at 5 km/h)
-    scale = 1 - 0.05*speed*speed;
+    // for this lab only, scale down the speed (cap it at 10 km/h)
+    scale = 1 - 0.01*speed*speed;
     //if (scale < 0) scale = 0;
 
     if (leftForce == 0) {
