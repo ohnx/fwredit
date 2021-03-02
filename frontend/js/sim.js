@@ -91,6 +91,7 @@ let simulatorCode = function(Ammo) {
   } else if (current_lab == 'lab2') {
     lab_init = lab2_photovore_setup;
     lab_syncfunc = lab2_photovore_syncfunc;
+    document.getElementById('light-ct').style.display = 'inline-block';
   } else if (current_lab == 'lab3') {
     lab_init = lab3_control_setup;
     lab_syncfunc = lab3_control_syncfunc;
@@ -145,6 +146,11 @@ let simulatorCode = function(Ammo) {
       rightSensorOffset = 0.85 + Math.random() * 0.30; // random offset
       localStorage.setItem('RIGHT_SENSOR_OFFSET', rightSensorOffset);
     }
+
+    document.getElementById('btnRandomizeLightPos').addEventListener('click', function(e) {
+      randomizeLightPosn();
+      window.location.reload(false);
+    });
   }
 
   function lab2_photovore_syncfunc(p, q) {
